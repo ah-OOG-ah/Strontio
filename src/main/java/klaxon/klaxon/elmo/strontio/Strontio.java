@@ -1,12 +1,14 @@
 package klaxon.klaxon.elmo.strontio;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.min;
 import static java.lang.Math.round;
 
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.function.Function;
 import org.jfree.chart.plot.FastScatterPlot;
+import org.jfree.data.general.Dataset;
 import org.jfree.data.xy.DefaultXYDataset;
 
 public class Strontio {
@@ -71,6 +73,28 @@ public class Strontio {
         ys = POPULATION.stream().filter(po -> !finalP.accept(po)).mapToDouble(Pop::height).toArray();
         data.addSeries("not fat", new double[][] { xs, ys });
 
+        // wx/-w + 2b/-w = y
+        final var minX = POPULATION.stream().mapToDouble(Pop::weight).min().getAsDouble();
+        final var maxX = POPULATION.stream().mapToDouble(Pop::weight).max().getAsDouble();
+        final var len = 10;
+        xs = new double[len];
+        ys = new double[len];
+        final var b = p.bias();
+        final var wx = p.weights()[0];
+        final var wy = p.weights()[1];
+
+        for (int i = 0; i < len; ++i) {
+            var x = lerp(minX, maxX, i / (len - 1.0));
+            ys[i] = (wx * x / -wy) + 2 * b / -wy;
+            xs[i] = x;
+        }
+
+        data.addSeries("perceptron", new double[][] {xs, ys});
+
         ScatterChart.chart("Height and Weight of People", data, "x", "y");
+    }
+
+    static double lerp(double a, double b, double f) {
+        return (b - a) * f + a;
     }
 }
