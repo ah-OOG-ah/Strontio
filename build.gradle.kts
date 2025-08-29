@@ -9,6 +9,7 @@ version = "0.0.0"
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -23,12 +24,15 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")    // Log4j2 Core impl
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.20.0") // SLF4J to Log4j2 bridge
 
+    implementation("org.jfree:jfreechart:1.5.0")
+
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 application {
-    mainClass = "klaxon.klaxon.elmo.Elmo"
+    mainClass = "klaxon.klaxon.elmo.strontio.Strontio"
+    // applicationDefaultJvmArgs += "--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED"
 }
 
 tasks.test {

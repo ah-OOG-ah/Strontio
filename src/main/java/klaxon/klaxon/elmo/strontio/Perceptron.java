@@ -28,6 +28,10 @@ public record Perceptron(float[] weights, float bias, Function<Float, Float> tra
         return transfer.apply(sum);
     }
 
+    public boolean accept(Pop pop) {
+        return accept(new float[] {pop.weight(), pop.height()}) > 0;
+    }
+
     @Override
     public @NotNull String toString() {
         return "Perceptron[weights=" + Arrays.toString(weights) + ", bias=" + bias + ", transfer=" + transfer.toString() + "]";

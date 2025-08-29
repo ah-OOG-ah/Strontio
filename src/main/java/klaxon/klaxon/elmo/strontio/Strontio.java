@@ -3,12 +3,11 @@ package klaxon.klaxon.elmo.strontio;
 import static java.lang.Math.abs;
 import static java.lang.Math.round;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.function.Function;
+import org.jfree.chart.plot.FastScatterPlot;
+import org.jfree.data.xy.DefaultXYDataset;
 
 public class Strontio {
     public static final ArrayList<Pop> POPULATION = new ArrayList<>();
@@ -62,5 +61,16 @@ public class Strontio {
                 break;
             }
         }
+
+        final var data = new DefaultXYDataset();
+        Perceptron finalP = p;
+        double[] xs = POPULATION.stream().filter(finalP::accept).mapToDouble(Pop::weight).toArray();
+        double[] ys = POPULATION.stream().filter(finalP::accept).mapToDouble(Pop::height).toArray();
+        data.addSeries("fat", new double[][] { xs, ys });
+        xs = POPULATION.stream().filter(po -> !finalP.accept(po)).mapToDouble(Pop::weight).toArray();
+        ys = POPULATION.stream().filter(po -> !finalP.accept(po)).mapToDouble(Pop::height).toArray();
+        data.addSeries("not fat", new double[][] { xs, ys });
+
+        ScatterChart.chart("Height and Weight of People", data, "x", "y");
     }
 }
