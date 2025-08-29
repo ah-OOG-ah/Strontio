@@ -7,7 +7,6 @@ import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED;
 import static klaxon.klaxon.elmo.Component.Type.RESISTOR;
 import static klaxon.klaxon.elmo.Utils.boxPanel;
 
-import java.awt.Dimension;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;

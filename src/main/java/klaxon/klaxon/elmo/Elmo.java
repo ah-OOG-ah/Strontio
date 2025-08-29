@@ -2,23 +2,12 @@ package klaxon.klaxon.elmo;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static javax.swing.BoxLayout.Y_AXIS;
-import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER;
-import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED;
-import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
-import static klaxon.klaxon.elmo.Component.Type.RESISTOR;
-import static klaxon.klaxon.elmo.Utils.boxPanel;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import java.awt.Color;
 import java.util.Map;
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import javax.swing.WindowConstants;
 
 public class Elmo {
     public static void main(String[] args) {

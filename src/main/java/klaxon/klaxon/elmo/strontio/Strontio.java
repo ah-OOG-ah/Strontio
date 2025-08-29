@@ -1,14 +1,11 @@
 package klaxon.klaxon.elmo.strontio;
 
 import static java.lang.Math.abs;
-import static java.lang.Math.min;
 import static java.lang.Math.round;
 
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.function.Function;
-import org.jfree.chart.plot.FastScatterPlot;
-import org.jfree.data.general.Dataset;
 import org.jfree.data.xy.DefaultXYDataset;
 
 public class Strontio {

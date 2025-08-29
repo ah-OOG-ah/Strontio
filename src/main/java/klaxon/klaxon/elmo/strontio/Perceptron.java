@@ -1,7 +1,5 @@
 package klaxon.klaxon.elmo.strontio;
 
-import static java.util.Arrays.copyOfRange;
-
 import java.util.Arrays;
 import java.util.Random;
 import java.util.function.Function;
