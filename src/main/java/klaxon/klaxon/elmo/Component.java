@@ -27,6 +27,7 @@ public record Component(Type t, double value, int pin1, int pin2) {
 
         public void addRow(Component c) {
             m.addRow(c);
+            repaint();
         }
 
         public static class Model extends AbstractTableModel {
