@@ -33,8 +33,7 @@ dependencies {
 }
 
 application {
-    mainClass = "klaxon.klaxon.elmo.strontio.Strontio"
-    // applicationDefaultJvmArgs += "--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED"
+    mainClass = "klaxon.klaxon.elmo.core.Hand"
 }
 
 tasks.test {

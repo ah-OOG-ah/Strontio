@@ -22,6 +22,7 @@ public class Hand {
         if (!validate(b1, r1, r2, r3, rL, r5, b2)) throw new RuntimeException();
 
         // Generate Kirchhoff loops and print
+        printKirchoffs(linearCircuit(15));
         printKirchoffs(b1);
         printKirchoffs(b2);
     }
@@ -142,4 +143,14 @@ public class Hand {
         public abstract String name();
     }
 
+
+    /*
+
+[ 1, 0, 0, 0, 0, 0.00987065415146770] # i1
+[ 0, 1, 0, 0, 0, 0.00864643959485513] # i2
+[ 0, 0, 1, 0, 0, 0.00122421455661257] # i3
+[ 0, 0, 0, 1, 0, 0.00355669403235004] # i4
+[ 0, 0, 0, 0, 1, 0.00233247947573747] # i5
+
+     */
 }
