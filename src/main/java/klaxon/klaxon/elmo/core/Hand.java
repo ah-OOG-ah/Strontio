@@ -83,8 +83,6 @@ public class Hand {
             for (var c : node.components) {
                 heads.add(new TwoPinLoop(head, new MetaTwoPin(c, c.one == node)));
             }
-
-            // Generate junction equations, if needed.
         }
 
         return loops;
