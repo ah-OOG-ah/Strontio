@@ -11,8 +11,6 @@ public class Hand {
     static final Logger LOGGER = LoggerFactory.getLogger(Hand.class);
 
     public static void main(String[] args) {
-
-
         // Generate Kirchhoff loops and print
         printKirchoffs(linearCircuit(15));
         printKirchoffs(superCircuit());
@@ -25,8 +23,8 @@ public class Hand {
         final var r3 = new Resistor(r1.two(), null, 2_210, 3);
         final var r4 = new Resistor(r3.two(), battery.low(), 749, 4);
         final var r5 = new Resistor(r3.two(), battery.low(), 998, 5);
-
-        if (!validate(battery, r1, r2, r3, r4, r5)) throw new RuntimeException("Validation failure!");
+        validate(battery, r1, r2, r3, r4, r5);
+        
         return battery;
     }
 
@@ -38,8 +36,7 @@ public class Hand {
         final var rL = new Resistor(r3.two(), b1.low(), 750, 4);
         final var r5 = new Resistor(b1.low(), null, 1_000, 5);
         final var b2 = new VoltSource(r5.two(), r3.two(), 5);
-
-        if (!validate(b1, r1, r2, r3, rL, r5, b2)) throw new RuntimeException();
+        validate(b1, r1, r2, r3, rL, r5, b2);
 
         return b1;
     }
@@ -91,8 +88,9 @@ public class Hand {
         return loops;
     }
 
+    /// @return true if the components have nonnull pins
     /// TODO: make this more thorough
-    static boolean validate(TwoPin... components) {
+    static void validate(TwoPin... components) {
         var ret = true;
         for (var c : components) {
             if (c.one == null || c.two == null) {
@@ -102,8 +100,7 @@ public class Hand {
         }
 
         if (ret) LOGGER.info("All components valid!");
-
-        return ret;
+        else throw new RuntimeException("Validation failure!");
     }
 
     static abstract class TwoPin {
