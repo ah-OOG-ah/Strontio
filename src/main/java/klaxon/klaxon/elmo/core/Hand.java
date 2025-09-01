@@ -12,16 +12,18 @@ public class Hand {
 
     public static void main(String[] args) {
         final var battery = new VoltSource(5);
-        final var r1 = new Resistor(battery.high(), null, 47_000);
-        final var r2 = new Resistor(r1.two(), battery.low(), 620);
-        final var r3 = new Resistor(r1.two(), null, 2_200);
-        final var r4 = new Resistor(r3.two(), battery.low(), 750);
-        final var r5 = new Resistor(r3.two(), battery.low(), 1_000);
+        final var r1 = new Resistor(battery.high(), null, 47_000, 1);
+        final var r2 = new Resistor(r1.two(), battery.low(), 620, 2);
+        final var r3 = new Resistor(r1.two(), null, 2_200, 3);
+        final var r4 = new Resistor(r3.two(), battery.low(), 750, 4);
+        final var r5 = new Resistor(r3.two(), battery.low(), 1_000, 5);
 
         if (!validate(battery, r1, r2, r3, r4, r5)) return;
 
         // Now generate Kirchhoff loops
-        for (var l : generateLoops(battery)) {
+        final var loops = generateLoops(battery);
+        LOGGER.info("Printing loop equations...");
+        for (var l : loops) {
             LOGGER.info("{}", l);
         }
     }
