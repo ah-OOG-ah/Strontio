@@ -24,7 +24,7 @@ public class Hand {
         final var r4 = new Resistor(r3.two(), battery.low(), 749, 4);
         final var r5 = new Resistor(r3.two(), battery.low(), 998, 5);
         validate(battery, r1, r2, r3, r4, r5);
-        
+
         return battery;
     }
 
@@ -88,7 +88,7 @@ public class Hand {
         return loops;
     }
 
-    /// @return true if the components have nonnull pins
+    /// Throws an exception if any component has a null pin
     /// TODO: make this more thorough
     static void validate(TwoPin... components) {
         var ret = true;
@@ -145,14 +145,4 @@ public class Hand {
         public abstract String name();
     }
 
-
-    /*
-
-[ 1, 0, 0, 0, 0, 0.00987065415146770] # i1
-[ 0, 1, 0, 0, 0, 0.00864643959485513] # i2
-[ 0, 0, 1, 0, 0, 0.00122421455661257] # i3
-[ 0, 0, 0, 1, 0, 0.00355669403235004] # i4
-[ 0, 0, 0, 0, 1, 0.00233247947573747] # i5
-
-     */
 }
