@@ -11,21 +11,23 @@ public class Hand {
     static final Logger LOGGER = LoggerFactory.getLogger(Hand.class);
 
     public static void main(String[] args) {
-        final var battery = new VoltSource(5);
+        // Generate Kirchhoff loops and print
+        final var loops = generateLoops(linearCircuit(5));
+        LOGGER.info("Printing loop equations...");
+        for (var l : loops) {
+            LOGGER.info("{}", l.toEquation());
+        }
+    }
+
+    private static VoltSource linearCircuit(double voltage) {
+        final var battery = new VoltSource(voltage);
         final var r1 = new Resistor(battery.high(), null, 47_000, 1);
         final var r2 = new Resistor(r1.two(), battery.low(), 620, 2);
         final var r3 = new Resistor(r1.two(), null, 2_200, 3);
         final var r4 = new Resistor(r3.two(), battery.low(), 750, 4);
         final var r5 = new Resistor(r3.two(), battery.low(), 1_000, 5);
 
-        if (!validate(battery, r1, r2, r3, r4, r5)) return;
-
-        // Now generate Kirchhoff loops
-        final var loops = generateLoops(battery);
-        LOGGER.info("Printing loop equations...");
-        for (var l : loops) {
-            LOGGER.info("{}", l.toEquation());
-        }
+        if (!validate(battery, r1, r2, r3, r4, r5)) throw new RuntimeException("Validation failure!");
     }
 
     static List<TwoPinLoop> generateLoops(VoltSource v) {
