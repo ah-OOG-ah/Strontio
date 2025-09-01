@@ -4,7 +4,6 @@ import static java.lang.Math.abs;
 import static java.lang.Math.round;
 
 import java.util.ArrayList;
-import java.util.Scanner;
 import java.util.function.Function;
 import org.jfree.data.xy.DefaultXYDataset;
 
@@ -23,7 +22,6 @@ public class Strontio {
                 return "f -> (float) round(f)";
             }
         });
-        final var reader = new Scanner(System.in);
 
         POPULATION.add(new Pop(34, 128, false));
         POPULATION.add(new Pop(35, 150, false));
@@ -45,8 +43,6 @@ public class Strontio {
                 hitrate += correct ? (100.0f / POPULATION.size()) : 0.0f;
             }
 
-            System.out.println("Hitrate: " + hitrate + "%");
-
             if (lastHit > hitrate) p = lastPerceptron;
             else {
                 lastPerceptron = p;
@@ -61,13 +57,17 @@ public class Strontio {
             }
         }
 
+        //graph(p);
+    }
+
+    static void graph(final Perceptron p) {
+
         final var data = new DefaultXYDataset();
-        Perceptron finalP = p;
-        double[] xs = POPULATION.stream().filter(finalP::accept).mapToDouble(Pop::weight).toArray();
-        double[] ys = POPULATION.stream().filter(finalP::accept).mapToDouble(Pop::height).toArray();
+        double[] xs = POPULATION.stream().filter(p::accept).mapToDouble(Pop::weight).toArray();
+        double[] ys = POPULATION.stream().filter(p::accept).mapToDouble(Pop::height).toArray();
         data.addSeries("fat", new double[][] { xs, ys });
-        xs = POPULATION.stream().filter(po -> !finalP.accept(po)).mapToDouble(Pop::weight).toArray();
-        ys = POPULATION.stream().filter(po -> !finalP.accept(po)).mapToDouble(Pop::height).toArray();
+        xs = POPULATION.stream().filter(po -> !p.accept(po)).mapToDouble(Pop::weight).toArray();
+        ys = POPULATION.stream().filter(po -> !p.accept(po)).mapToDouble(Pop::height).toArray();
         data.addSeries("not fat", new double[][] { xs, ys });
 
         // wx/-w + 2b/-w = y
