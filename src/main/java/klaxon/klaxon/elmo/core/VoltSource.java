@@ -1,7 +1,7 @@
 package klaxon.klaxon.elmo.core;
 
 final class VoltSource extends Hand.TwoPin {
-    private final double voltage;
+    public final double voltage;
 
     /**
      * @param low     component attached to the negative side

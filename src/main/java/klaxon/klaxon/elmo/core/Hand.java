@@ -24,7 +24,7 @@ public class Hand {
         final var loops = generateLoops(battery);
         LOGGER.info("Printing loop equations...");
         for (var l : loops) {
-            LOGGER.info("{}", l);
+            LOGGER.info("{}", l.toEquation());
         }
     }
 
@@ -33,7 +33,12 @@ public class Hand {
         // Get everything attached to the battery, and start loops from them.
         var heads = v.high().components.stream()
                 .filter(p -> p != v)
-                .map(TwoPinLoop::new)
+                .map(p -> {
+                    // One is the absolute direction. When forwards, it should match the high side of the battery.
+                    return new TwoPinLoop(
+                        new DirectedTP(v, true),
+                        new DirectedTP(p, p.one == v.high()));
+                })
                 .collect(Collectors.toCollection(ArrayDeque::new));
         var loops = new ArrayList<TwoPinLoop>();
 
@@ -41,20 +46,20 @@ public class Hand {
         // loops that repeat elements.
         while (!heads.isEmpty()) {
             var head = heads.remove();
-            var node = head.loopElements.getLast().two;
+            var node = head.getLast().t().two;
+
+            if (node.components.contains(v)) {
+                // This loop is done, drop it
+                loops.add(head);
+                continue;
+            }
 
             // Add each new element to the BFS
             // TODO: less allocation spam
             for (var c : node.components) {
-                if (head.loopElements.contains(c)) continue;
-                if (c == v) {
-                    // This loop is done, drop it
-                    head.loopElements.add(v);
-                    loops.add(head);
-                    continue;
-                }
+                if (head.contains(c)) continue;
 
-                heads.add(new TwoPinLoop(head, c));
+                heads.add(new TwoPinLoop(head, new DirectedTP(c, c.one == node)));
             }
         }
 
