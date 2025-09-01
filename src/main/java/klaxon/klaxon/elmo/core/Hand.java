@@ -17,6 +17,7 @@ public class Hand {
         if (!validate(battery, r1, r2, r3, r4, r5)) return;
     }
 
+    /// TODO: make this more thorough
     static boolean validate(TwoPin... components) {
         var ret = true;
         for (var c : components) {
@@ -36,29 +37,29 @@ public class Hand {
         private Node two;
 
         public Node one() {
-            if (one == null) one = new Node();
+            if (one == null) one = new Node(this);
 
             return one;
         }
 
         public Node two() {
-            if (two == null) two = new Node();
+            if (two == null) two = new Node(this);
 
             return two;
         }
 
         public void setOne(Node n) {
-            one = n;
+            one = n.add(this);
         }
 
         public void setTwo(Node n) {
-            two = n;
+            two = n.add(this);
         }
 
         public String toString() {
             return name() + "[" +
-                    "one=" + one() + ", " +
-                    "two=" + two() + extraInfo() + "]";
+                    "one=" + one + ", " +
+                    "two=" + two + extraInfo() + "]";
         }
 
         public String extraInfo() {
