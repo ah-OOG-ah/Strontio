@@ -29,11 +29,11 @@ public class Hand {
 
     private static VoltSource linearCircuit(double voltage) {
         final var battery = new VoltSource(voltage);
-        final var r1 = new Resistor(battery.high(), null, 47_000, 1);
-        final var r2 = new Resistor(r1.two(), battery.low(), 620, 2);
-        final var r3 = new Resistor(r1.two(), null, 2_200, 3);
-        final var r4 = new Resistor(r3.two(), battery.low(), 750, 4);
-        final var r5 = new Resistor(r3.two(), battery.low(), 1_000, 5);
+        final var r1 = new Resistor(battery.high(), null, 468, 1);
+        final var r2 = new Resistor(r1.two(), battery.low(), 621, 2);
+        final var r3 = new Resistor(r1.two(), null, 2_210, 3);
+        final var r4 = new Resistor(r3.two(), battery.low(), 749, 4);
+        final var r5 = new Resistor(r3.two(), battery.low(), 998, 5);
 
         if (!validate(battery, r1, r2, r3, r4, r5)) throw new RuntimeException("Validation failure!");
         return battery;
