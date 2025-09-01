@@ -12,4 +12,18 @@ record DirectedTP(Hand.TwoPin t, boolean forwards) {
     public @NotNull String toString() {
         return "[" + t + ", " + (forwards ? "normal" : "reverse") + "]";
     }
+
+    /**
+     * @return {@link Hand.TwoPin#two()} if {@link #forwards()}, otherwise {@link Hand.TwoPin#one()}
+     */
+    public Node next() {
+        return forwards ? t.two() : t.one();
+    }
+
+    /**
+     * @return the opposite of {@link #next()}
+     */
+    public Node previous() {
+        return !forwards ? t.two() : t.one();
+    }
 }

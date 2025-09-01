@@ -64,19 +64,20 @@ public class Hand {
         // loops that repeat elements.
         while (!heads.isEmpty()) {
             var head = heads.remove();
-            var node = head.getLast().t().two;
+            var node = head.getLast().next();
 
-            if (node.components.contains(v)) {
-                // This loop is done, drop it
+            if (node == (v.low())) {
+                // This loop is done, send it!
                 loops.add(head);
+                continue;
+            } else if (head.contains(node)) {
+                // We looped around to a previously-visited node - this isn't a valid circuit
                 continue;
             }
 
             // Add each new element to the BFS
             // TODO: less allocation spam
             for (var c : node.components) {
-                if (head.contains(c)) continue;
-
                 heads.add(new TwoPinLoop(head, new DirectedTP(c, c.one == node)));
             }
         }

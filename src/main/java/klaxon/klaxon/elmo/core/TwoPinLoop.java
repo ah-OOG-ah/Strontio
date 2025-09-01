@@ -7,7 +7,7 @@ import java.util.List;
 
 public class TwoPinLoop {
     private final LinkedHashSet<DirectedTP> loopElements = new LinkedHashSet<>();
-    private final HashSet<Hand.TwoPin> seen = new HashSet<>();
+    private final HashSet<Node> seen = new HashSet<>();
 
     public TwoPinLoop() {}
     TwoPinLoop(DirectedTP... t) { addAll(List.of(t)); }
@@ -50,16 +50,16 @@ public class TwoPinLoop {
 
     void add(DirectedTP t) {
         loopElements.add(t);
-        seen.add(t.t());
+        seen.add(t.previous());
     }
 
     void addAll(Collection<DirectedTP> t) {
         loopElements.addAll(t);
-        seen.addAll(t.stream().map(DirectedTP::t).toList());
+        seen.addAll(t.stream().map(DirectedTP::previous).toList());
     }
 
-    boolean contains(Hand.TwoPin t) {
-        return seen.contains(t);
+    boolean contains(Node n) {
+        return seen.contains(n);
     }
 
     DirectedTP getLast() {
