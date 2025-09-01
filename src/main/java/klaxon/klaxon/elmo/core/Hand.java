@@ -28,6 +28,7 @@ public class Hand {
         final var r5 = new Resistor(r3.two(), battery.low(), 1_000, 5);
 
         if (!validate(battery, r1, r2, r3, r4, r5)) throw new RuntimeException("Validation failure!");
+        return battery;
     }
 
     static List<TwoPinLoop> generateLoops(VoltSource v) {
