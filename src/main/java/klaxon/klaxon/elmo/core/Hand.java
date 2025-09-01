@@ -27,7 +27,7 @@ public class Hand {
         printKirchoffs(b2);
     }
 
-    private static VoltSource linearCircuit(double voltage) {
+    private static TwoPin linearCircuit(double voltage) {
         final var battery = new VoltSource(voltage);
         final var r1 = new Resistor(battery.high(), null, 468, 1);
         final var r2 = new Resistor(r1.two(), battery.low(), 621, 2);
@@ -47,16 +47,16 @@ public class Hand {
         }
     }
 
-    static List<TwoPinLoop> generateLoops(VoltSource v) {
+    static List<TwoPinLoop> generateLoops(TwoPin v) {
         // Starting from the battery, we breadth-first search.
         // Get everything attached to the battery, and start loops from them.
-        var heads = v.high().components.stream()
+        var heads = v.two.components.stream()
                 .filter(p -> p != v)
                 .map(p -> {
                     // One is the absolute direction. When forwards, it should match the high side of the battery.
                     return new TwoPinLoop(
                         new DirectedTP(v, true),
-                        new DirectedTP(p, p.one == v.high()));
+                        new DirectedTP(p, p.one == v.two));
                 })
                 .collect(Collectors.toCollection(ArrayDeque::new));
         var loops = new ArrayList<TwoPinLoop>();
@@ -67,7 +67,7 @@ public class Hand {
             var head = heads.remove();
             var node = head.getLast().next();
 
-            if (node == (v.low())) {
+            if (node == (v.one)) {
                 // This loop is done, send it!
                 loops.add(head);
                 continue;
