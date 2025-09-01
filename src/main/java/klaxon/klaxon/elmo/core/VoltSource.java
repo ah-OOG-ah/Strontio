@@ -27,6 +27,13 @@ final class VoltSource extends Hand.TwoPin {
         return "VoltSource";
     }
 
+    @Override
+    public void addToEquation(StringBuilder sb, boolean positive) {
+        sb.append(" ")
+                .append(positive ? voltage * -1 : voltage)
+                .append("V");
+    }
+
     public Node low() { return one(); }
     public Node high() { return two(); }
     public void setLow(Node n) { setOne(n); }

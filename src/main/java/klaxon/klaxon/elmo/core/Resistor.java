@@ -42,4 +42,5 @@ final class Resistor extends Hand.TwoPin {
                 .append(name().toLowerCase())
                 .append("*")
                 .append(resistance);
+    }
 }

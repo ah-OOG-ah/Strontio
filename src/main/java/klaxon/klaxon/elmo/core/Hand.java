@@ -145,6 +145,7 @@ public class Hand {
         }
 
         public abstract String name();
+        public abstract void addToEquation(StringBuilder sb, boolean positive);
     }
 
 }
