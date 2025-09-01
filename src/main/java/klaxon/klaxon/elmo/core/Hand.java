@@ -11,20 +11,11 @@ public class Hand {
     static final Logger LOGGER = LoggerFactory.getLogger(Hand.class);
 
     public static void main(String[] args) {
-        final var b1 = new VoltSource(10);
-        final var r1 = new Resistor(b1.high(), null, 470, 1);
-        final var r2 = new Resistor(r1.two(), b1.low(), 620, 2);
-        final var r3 = new Resistor(r1.two(), null, 2_200, 3);
-        final var rL = new Resistor(r3.two(), b1.low(), 750, 4);
-        final var r5 = new Resistor(b1.low(), null, 1_000, 5);
 
-        final var b2 = new VoltSource(r5.two(), r3.two(), 5);
-        if (!validate(b1, r1, r2, r3, rL, r5, b2)) throw new RuntimeException();
 
         // Generate Kirchhoff loops and print
         printKirchoffs(linearCircuit(15));
-        printKirchoffs(b1);
-        printKirchoffs(b2);
+        printKirchoffs(superCircuit());
     }
 
     private static TwoPin linearCircuit(double voltage) {
@@ -39,7 +30,21 @@ public class Hand {
         return battery;
     }
 
-    private static void printKirchoffs(VoltSource v) {
+    private static TwoPin superCircuit() {
+        final var b1 = new VoltSource(10);
+        final var r1 = new Resistor(b1.high(), null, 470, 1);
+        final var r2 = new Resistor(r1.two(), b1.low(), 620, 2);
+        final var r3 = new Resistor(r1.two(), null, 2_200, 3);
+        final var rL = new Resistor(r3.two(), b1.low(), 750, 4);
+        final var r5 = new Resistor(b1.low(), null, 1_000, 5);
+        final var b2 = new VoltSource(r5.two(), r3.two(), 5);
+
+        if (!validate(b1, r1, r2, r3, rL, r5, b2)) throw new RuntimeException();
+
+        return b1;
+    }
+
+    private static void printKirchoffs(TwoPin v) {
         final var loops = generateLoops(v);
         LOGGER.info("Printing loop equations...");
         for (var l : loops) {
