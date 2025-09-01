@@ -1,4 +1,4 @@
-package klaxon.klaxon.elmo.strontio;
+package klaxon.klaxon.strontio;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.round;

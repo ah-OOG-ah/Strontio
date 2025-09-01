@@ -1,4 +1,4 @@
-package klaxon.klaxon.elmo.strontio;
+package klaxon.klaxon.strontio;
 
 import java.util.Arrays;
 import java.util.Random;
