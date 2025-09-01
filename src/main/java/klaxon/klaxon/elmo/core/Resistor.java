@@ -9,12 +9,12 @@ final class Resistor extends Hand.TwoPin {
      * @param resistance in ohms
      */
     Resistor(Node one, Node two, double resistance) {
-        this(resistance);
-        setOne(one); setTwo(two);
+        super(one, two);
+        this.resistance = resistance;
     }
 
     Resistor(double resistance) {
-        this.resistance = resistance;
+        this(null, null, resistance);
     }
 
     @Override

@@ -13,4 +13,9 @@ class Node {
 
     @Contract("_ -> this")
     Node add(Hand.TwoPin t) { components.add(t); return this; }
+
+    @Override
+    public String toString() {
+        return "Node[connections=" + components.size() + "]";
+    }
 }

@@ -9,12 +9,12 @@ final class VoltSource extends Hand.TwoPin {
      * @param voltage voltage difference between sides
      */
     VoltSource(Node low, Node high, double voltage) {
-        this(voltage);
-        setOne(low); setTwo(high);
+        super(low, high);
+        this.voltage = voltage;
     }
 
     VoltSource(double voltage) {
-        this.voltage = voltage;
+        this(null, null, voltage);
     }
 
     @Override

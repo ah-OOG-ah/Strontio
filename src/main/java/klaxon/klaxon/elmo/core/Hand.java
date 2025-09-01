@@ -1,5 +1,9 @@
 package klaxon.klaxon.elmo.core;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +19,44 @@ public class Hand {
         final var r5 = new Resistor(r3.two(), battery.low(), 1_000);
 
         if (!validate(battery, r1, r2, r3, r4, r5)) return;
+
+        // Now generate Kirchhoff loops
+        for (var l : generateLoops(battery)) {
+            LOGGER.info("{}", l);
+        }
+    }
+
+    static List<TwoPinLoop> generateLoops(VoltSource v) {
+        // Starting from the battery, we breadth-first search.
+        // Get everything attached to the battery, and start loops from them.
+        var heads = v.high().components.stream()
+                .filter(p -> p != v)
+                .map(TwoPinLoop::new)
+                .collect(Collectors.toCollection(ArrayDeque::new));
+        var loops = new ArrayList<TwoPinLoop>();
+
+        // BFS! For each component, continue the loop. If there are multiple options, copy the loop and keep going. Kill
+        // loops that repeat elements.
+        while (!heads.isEmpty()) {
+            var head = heads.remove();
+            var node = head.loopElements.getLast().two;
+
+            // Add each new element to the BFS
+            // TODO: less allocation spam
+            for (var c : node.components) {
+                if (head.loopElements.contains(c)) continue;
+                if (c == v) {
+                    // This loop is done, drop it
+                    head.loopElements.add(v);
+                    loops.add(head);
+                    continue;
+                }
+
+                heads.add(new TwoPinLoop(head, c));
+            }
+        }
+
+        return loops;
     }
 
     /// TODO: make this more thorough
@@ -35,6 +77,11 @@ public class Hand {
     static abstract class TwoPin {
         private Node one;
         private Node two;
+
+        TwoPin(Node one, Node two) {
+            if (one != null) setOne(one);
+            if (two != null) setTwo(two);
+        }
 
         public Node one() {
             if (one == null) one = new Node(this);
