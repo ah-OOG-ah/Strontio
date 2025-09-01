@@ -43,7 +43,7 @@ public class Hand {
 
     private static void printKirchoffs(TwoPin v) {
         final var loops = generateLoops(v);
-        LOGGER.info("Printing loop equations...");
+        LOGGER.info("Printing Kirchhoff equations...");
         for (var l : loops) {
             LOGGER.info("{}", l.toEquation());
         }
@@ -57,8 +57,8 @@ public class Hand {
                 .map(p -> {
                     // One is the absolute direction. When forwards, it should match the high side of the battery.
                     return new TwoPinLoop(
-                        new DirectedTP(v, true),
-                        new DirectedTP(p, p.one == v.two));
+                        new MetaTwoPin(v, true),
+                        new MetaTwoPin(p, p.one == v.two));
                 })
                 .collect(Collectors.toCollection(ArrayDeque::new));
         var loops = new ArrayList<TwoPinLoop>();
@@ -81,8 +81,10 @@ public class Hand {
             // Add each new element to the BFS
             // TODO: less allocation spam
             for (var c : node.components) {
-                heads.add(new TwoPinLoop(head, new DirectedTP(c, c.one == node)));
+                heads.add(new TwoPinLoop(head, new MetaTwoPin(c, c.one == node)));
             }
+
+            // Generate junction equations, if needed.
         }
 
         return loops;

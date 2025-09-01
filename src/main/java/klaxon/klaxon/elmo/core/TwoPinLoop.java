@@ -6,12 +6,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 public class TwoPinLoop {
-    private final LinkedHashSet<DirectedTP> loopElements = new LinkedHashSet<>();
+    private final LinkedHashSet<MetaTwoPin> loopElements = new LinkedHashSet<>();
     private final HashSet<Node> seen = new HashSet<>();
 
     public TwoPinLoop() {}
-    TwoPinLoop(DirectedTP... t) { addAll(List.of(t)); }
-    TwoPinLoop(TwoPinLoop l, DirectedTP t) {
+    TwoPinLoop(MetaTwoPin... t) { addAll(List.of(t)); }
+    TwoPinLoop(TwoPinLoop l, MetaTwoPin t) {
         addAll(l.loopElements);
         add(t);
     }
@@ -32,10 +32,10 @@ public class TwoPinLoop {
     public String toEquation() {
         StringBuilder equation = new StringBuilder("0 =");
         for (var e : loopElements) {
-            if (e.t() instanceof VoltSource v) {
-                equation.append(" ").append(e.forwards() ? v.voltage * -1 : v.voltage).append("V");
-            } else if (e.t() instanceof Resistor r) {
-                equation.append(" ").append(e.forwards() ? "" : "-").append("I").append(r.name()).append("*").append(r.resistance);
+            if (e.t instanceof VoltSource v) {
+                equation.append(" ").append(e.forwards ? v.voltage * -1 : v.voltage).append("V");
+            } else if (e.t instanceof Resistor r) {
+                equation.append(" ").append(e.forwards ? "" : "-").append("I").append(r.name()).append("*").append(r.resistance);
             } else {
                 throw new IllegalArgumentException("Unexpected element " + e);
             }
@@ -48,21 +48,21 @@ public class TwoPinLoop {
         return equation.toString();
     }
 
-    void add(DirectedTP t) {
+    void add(MetaTwoPin t) {
         loopElements.add(t);
         seen.add(t.previous());
     }
 
-    void addAll(Collection<DirectedTP> t) {
+    void addAll(Collection<MetaTwoPin> t) {
         loopElements.addAll(t);
-        seen.addAll(t.stream().map(DirectedTP::previous).toList());
+        seen.addAll(t.stream().map(MetaTwoPin::previous).toList());
     }
 
     boolean contains(Node n) {
         return seen.contains(n);
     }
 
-    DirectedTP getLast() {
+    MetaTwoPin getLast() {
         return loopElements.getLast();
     }
 }

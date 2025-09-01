@@ -33,4 +33,13 @@ final class Resistor extends Hand.TwoPin {
     public String name() {
         return idx < 0 ? "Resistor" : "R" + idx;
     }
+
+    @Override
+    public void addToEquation(StringBuilder sb, boolean positive) {
+        sb.append(" ")
+                .append(positive ? "" : "-")
+                .append("I")
+                .append(name().toLowerCase())
+                .append("*")
+                .append(resistance);
 }
