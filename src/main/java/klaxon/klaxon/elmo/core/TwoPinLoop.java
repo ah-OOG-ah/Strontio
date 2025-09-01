@@ -32,14 +32,7 @@ public class TwoPinLoop {
     public String toEquation() {
         StringBuilder equation = new StringBuilder("0 =");
         for (var e : loopElements) {
-            if (e.t instanceof VoltSource v) {
-                equation.append(" ").append(e.forwards ? v.voltage * -1 : v.voltage).append("V");
-            } else if (e.t instanceof Resistor r) {
-                equation.append(" ").append(e.forwards ? "" : "-").append("I").append(r.name()).append("*").append(r.resistance);
-            } else {
-                throw new IllegalArgumentException("Unexpected element " + e);
-            }
-
+            e.t.addToEquation(equation, e.forwards);
             equation.append(" +");
         }
 
