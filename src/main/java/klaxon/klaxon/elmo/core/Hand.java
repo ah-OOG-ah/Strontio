@@ -18,7 +18,7 @@ public class Hand {
         final var rL = new Resistor(r3.two(), b1.low(), 750, 4);
         final var r5 = new Resistor(b1.low(), null, 1_000, 5);
 
-        final var b2 = new VoltSource(r3.two(), r5.two(), 5);
+        final var b2 = new VoltSource(r5.two(), r3.two(), 5);
         if (!validate(b1, r1, r2, r3, rL, r5, b2)) throw new RuntimeException();
 
         // Generate Kirchhoff loops and print
