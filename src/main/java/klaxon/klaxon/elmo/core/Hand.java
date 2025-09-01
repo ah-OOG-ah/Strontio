@@ -3,7 +3,6 @@ package klaxon.klaxon.elmo.core;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,15 +51,8 @@ public class Hand {
     static List<TwoPinLoop> generateLoops(TwoPin v) {
         // Starting from the battery, we breadth-first search.
         // Get everything attached to the battery, and start loops from them.
-        var heads = v.two.components.stream()
-                .filter(p -> p != v)
-                .map(p -> {
-                    // One is the absolute direction. When forwards, it should match the high side of the battery.
-                    return new TwoPinLoop(
-                        new MetaTwoPin(v, true),
-                        new MetaTwoPin(p, p.one == v.two));
-                })
-                .collect(Collectors.toCollection(ArrayDeque::new));
+        var heads = new ArrayDeque<TwoPinLoop>();
+        heads.add(new TwoPinLoop(new MetaTwoPin(v, true)));
         var loops = new ArrayList<TwoPinLoop>();
 
         // BFS! For each component, continue the loop. If there are multiple options, copy the loop and keep going. Kill
@@ -81,6 +73,9 @@ public class Hand {
             // Add each new element to the BFS
             // TODO: less allocation spam
             for (var c : node.components) {
+                // This is a trivial -V + V = 0 loop, discard it
+                if (c == v) continue;
+
                 heads.add(new TwoPinLoop(head, new MetaTwoPin(c, c.one == node)));
             }
         }
