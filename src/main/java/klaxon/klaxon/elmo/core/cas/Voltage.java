@@ -1,6 +1,8 @@
 package klaxon.klaxon.elmo.core.cas;
 
-public sealed interface Voltage permits Voltage.Known, Voltage.Unknown {
+import java.util.List;
+
+public sealed interface Voltage permits Voltage.Known, Voltage.Sum {
     record Known(double voltage) implements Voltage {}
-    record Unknown() implements Voltage {}
+    record Sum(List<Voltage> sources) implements Voltage {}
 }

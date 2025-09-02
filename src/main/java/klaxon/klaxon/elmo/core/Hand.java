@@ -78,6 +78,8 @@ public class Hand {
 
                 heads.add(new TwoPinLoop(head, new MetaTwoPin(c, c.one == node)));
             }
+
+            // Manage electrical info. The current is equal to the sum of the currents of the next elements.
         }
 
         return loops;

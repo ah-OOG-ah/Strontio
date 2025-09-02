@@ -9,14 +9,13 @@ class MetaTwoPin {
     final Hand.TwoPin t;
     final boolean forwards;
     Voltage v;
-    Amperage a = new Amperage.Unknown();
+    Amperage a;
 
     MetaTwoPin(Hand.TwoPin t, boolean forwards) {
         this.t = t;
         this.forwards = forwards;
 
         if (t instanceof VoltSource vin) v = new Voltage.Known(vin.voltage);
-        else v = new Voltage.Unknown();
     }
 
     @Override
