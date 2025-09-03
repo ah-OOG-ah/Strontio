@@ -30,10 +30,10 @@ public class TwoPinLoop {
     }
 
     public String toEquation() {
-        StringBuilder equation = new StringBuilder("0 =");
+        StringBuilder equation = new StringBuilder("0 = ");
         for (var e : loopElements) {
-            e.t.addToEquation(equation, e.forwards);
-            equation.append(" +");
+            equation.append(e.toTerm());
+            equation.append(" + ");
         }
 
         var l = equation.length();

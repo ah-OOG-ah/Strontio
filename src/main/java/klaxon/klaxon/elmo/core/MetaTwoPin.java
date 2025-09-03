@@ -1,21 +1,13 @@
 package klaxon.klaxon.elmo.core;
 
-import klaxon.klaxon.elmo.core.cas.Amperage;
-import klaxon.klaxon.elmo.core.cas.Voltage;
+import java.util.List;
+import klaxon.klaxon.elmo.core.cas.Term;
 import org.jetbrains.annotations.NotNull;
 
 /// Stores additional data about a component - forwards/backwards loop orientation, voltage, current, and more.
-class MetaTwoPin {
-    final Hand.TwoPin t;
-    final boolean forwards;
-    Voltage v;
-    Amperage a;
-
+record MetaTwoPin(Hand.TwoPin t, boolean forwards, @NotNull List<Hand.TwoPin> sinks) implements Term {
     MetaTwoPin(Hand.TwoPin t, boolean forwards) {
-        this.t = t;
-        this.forwards = forwards;
-
-        if (t instanceof VoltSource vin) v = new Voltage.Known(vin.voltage);
+        this(t, forwards, (forwards ? t.two() : t.one()).components.stream().filter(o -> o != t).toList());
     }
 
     @Override
@@ -31,5 +23,10 @@ class MetaTwoPin {
     /// @return the opposite of {@link #next()}
     public Node previous() {
         return !forwards ? t.two() : t.one();
+    }
+
+    @Override
+    public String toTerm() {
+        return (forwards ? "" : "-") + t.addToEquation();
     }
 }

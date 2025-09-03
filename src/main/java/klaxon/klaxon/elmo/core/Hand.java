@@ -2,7 +2,11 @@ package klaxon.klaxon.elmo.core;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import klaxon.klaxon.elmo.core.cas.Relation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,19 +45,32 @@ public class Hand {
     }
 
     private static void printKirchoffs(TwoPin v) {
-        final var loops = generateLoops(v);
+        final var kirchoff = generateLoops(v);
         LOGGER.info("Printing Kirchhoff equations...");
-        for (var l : loops) {
+        for (var l : kirchoff.loops) {
             LOGGER.info("{}", l.toEquation());
+        }
+        for (var e : generateJunctions(kirchoff)) {
+            StringBuilder str = new StringBuilder();
+            for (var t : e.terms()) {
+                str.append(" ").append(t.toTerm());
+            }
+
+            LOGGER.info("{} ={}", e.answer(), str);
         }
     }
 
-    static List<TwoPinLoop> generateLoops(TwoPin v) {
+    static Kirchoff generateLoops(TwoPin v) {
         // Starting from the battery, we breadth-first search.
         // Get everything attached to the battery, and start loops from them.
         var heads = new ArrayDeque<TwoPinLoop>();
-        heads.add(new TwoPinLoop(new MetaTwoPin(v, true)));
         var loops = new ArrayList<TwoPinLoop>();
+        var components = new HashMap<TwoPin, MetaTwoPin>();
+
+
+        final var entryPoint = new MetaTwoPin(v, true);
+        heads.add(new TwoPinLoop(entryPoint));
+        components.put(v, entryPoint);
 
         // BFS! For each component, continue the loop. If there are multiple options, copy the loop and keep going. Kill
         // loops that repeat elements.
@@ -75,13 +92,39 @@ public class Hand {
             // TODO: less allocation spam
             for (var c : node.components) {
                 // No step back!
-                if (c == head.t) continue;
+                if (c == head.t()) continue;
 
-                heads.add(new TwoPinLoop(loop, new MetaTwoPin(c, c.one == node)));
+                boolean forwards = c.one == node;
+                final var mtp = new MetaTwoPin(c, forwards);
+                components.put(c, mtp);
+                heads.add(new TwoPinLoop(loop, mtp));
             }
         }
 
-        return loops;
+        return new Kirchoff(components, loops);
+    }
+
+    static List<Relation> generateJunctions(Kirchoff kirchoff) {
+        final var ret = new ArrayList<Relation>();
+        final var lookup = kirchoff.components;
+        for (var e : lookup.entrySet()) {
+            final var k = e.getKey();
+            if (!(k instanceof Resistor r)) continue;
+
+            final var mtp = e.getValue();
+            final var downstreams = new HashSet<>(mtp.sinks());
+            var nonResistor = downstreams.stream().filter(c -> !(c instanceof Resistor)).findAny();
+            while (nonResistor.isPresent()) {
+                var nr = nonResistor.get();
+                downstreams.remove(nr);
+                downstreams.addAll(lookup.get(nr).sinks());
+                nonResistor = downstreams.stream().filter(c -> !(c instanceof Resistor)).findAny();
+            }
+
+            ret.add(new Relation(r, downstreams.stream().map(lookup::get).toList()));
+        }
+
+        return ret;
     }
 
     /// Throws an exception if any component has a null pin
@@ -139,7 +182,8 @@ public class Hand {
         }
 
         public abstract String name();
-        public abstract void addToEquation(StringBuilder sb, boolean positive);
+        public abstract String addToEquation();
     }
 
+    record Kirchoff(Map<TwoPin, MetaTwoPin> components, List<TwoPinLoop> loops) {}
 }
