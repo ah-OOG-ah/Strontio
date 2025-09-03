@@ -5,7 +5,7 @@ import klaxon.klaxon.elmo.core.cas.Term;
 import org.jetbrains.annotations.NotNull;
 
 /// Stores additional data about a component - forwards/backwards loop orientation, voltage, current, and more.
-record MetaTwoPin(Hand.TwoPin t, boolean forwards, @NotNull List<Hand.TwoPin> sinks) implements Term {
+public record MetaTwoPin(Hand.TwoPin t, boolean forwards, @NotNull List<Hand.TwoPin> sinks) implements Term {
     MetaTwoPin(Hand.TwoPin t, boolean forwards) {
         this(t, forwards, (forwards ? t.two() : t.one()).components.stream().filter(o -> o != t).toList());
     }

@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import klaxon.klaxon.elmo.core.cas.Relation;
+import klaxon.klaxon.elmo.core.cas.JunctionEq;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,12 +51,7 @@ public class Hand {
             LOGGER.info("{}", l.toEquation());
         }
         for (var e : generateJunctions(kirchoff)) {
-            StringBuilder str = new StringBuilder();
-            for (var t : e.terms()) {
-                str.append(" ").append(t.toTerm());
-            }
-
-            LOGGER.info("{} ={}", e.answer(), str);
+            LOGGER.info("{}", e);
         }
     }
 
@@ -104,8 +99,8 @@ public class Hand {
         return new Kirchoff(components, loops);
     }
 
-    static List<Relation> generateJunctions(Kirchoff kirchoff) {
-        final var ret = new ArrayList<Relation>();
+    static List<JunctionEq> generateJunctions(Kirchoff kirchoff) {
+        final var ret = new ArrayList<JunctionEq>();
         final var lookup = kirchoff.components;
         for (var e : lookup.entrySet()) {
             final var k = e.getKey();
@@ -121,7 +116,7 @@ public class Hand {
                 nonResistor = downstreams.stream().filter(c -> !(c instanceof Resistor)).findAny();
             }
 
-            ret.add(new Relation(r, downstreams.stream().map(lookup::get).toList()));
+            ret.add(new JunctionEq(r, downstreams.stream().map(lookup::get).toList()));
         }
 
         return ret;

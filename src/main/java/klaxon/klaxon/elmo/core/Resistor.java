@@ -1,6 +1,6 @@
 package klaxon.klaxon.elmo.core;
 
-final class Resistor extends Hand.TwoPin {
+public final class Resistor extends Hand.TwoPin {
     public final double resistance;
     private final int idx;
 
