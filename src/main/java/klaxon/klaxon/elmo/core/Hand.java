@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 public class Hand {
     static final Logger LOGGER = LoggerFactory.getLogger(Hand.class);
 
-    public static void main(String[] args) {
+    static void main(String[] ignoredArgs) {
         // Generate Kirchhoff loops and print
         printKirchoffs(linearCircuit(15));
         printKirchoffs(superCircuit());
@@ -58,28 +58,27 @@ public class Hand {
         // BFS! For each component, continue the loop. If there are multiple options, copy the loop and keep going. Kill
         // loops that repeat elements.
         while (!heads.isEmpty()) {
-            var head = heads.remove();
-            var node = head.getLast().next();
+            var loop = heads.remove();
+            var head = loop.getLast();
+            var node = head.next();
 
             if (node == (v.one)) {
                 // This loop is done, send it!
-                loops.add(head);
+                loops.add(loop);
                 continue;
-            } else if (head.contains(node)) {
+            } else if (loop.contains(node)) {
                 // We looped around to a previously-visited node - this isn't a valid circuit
                 continue;
             }
 
-            // Add each new element to the BFS
+            // Add each new element to the BFS, and set up for junction calculation
             // TODO: less allocation spam
             for (var c : node.components) {
-                // This is a trivial -V + V = 0 loop, discard it
-                if (c == v) continue;
+                // No step back!
+                if (c == head.t) continue;
 
-                heads.add(new TwoPinLoop(head, new MetaTwoPin(c, c.one == node)));
+                heads.add(new TwoPinLoop(loop, new MetaTwoPin(c, c.one == node)));
             }
-
-            // Manage electrical info. The current is equal to the sum of the currents of the next elements.
         }
 
         return loops;
@@ -100,7 +99,7 @@ public class Hand {
         else throw new RuntimeException("Validation failure!");
     }
 
-    static abstract class TwoPin {
+    public static abstract class TwoPin {
         private Node one;
         private Node two;
 
