@@ -1,9 +1,6 @@
-import org.gradle.kotlin.dsl.accessors.runtime.extensionOf
-
 plugins {
     id("application")
     id("me.champeau.jmh") version "0.7.3"
-
 }
 
 group = "klaxon.klaxon"
@@ -34,6 +31,12 @@ dependencies {
 
 application {
     mainClass = "klaxon.klaxon.elmo.core.Hand"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
 }
 
 tasks.test {
