@@ -1,0 +1,134 @@
+package klaxon.klaxon.elmo.core;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+public class Circuit {
+    private int nextIdx = 0;
+    private HashMap<Class<? extends TwoPin>, Integer> nextCIdx = new HashMap<>();
+    public ArrayList<TwoPin> components = new ArrayList<>();
+
+    public abstract sealed class TwoPin permits Resistor, VoltSource {
+        private Node one;
+        private Node two;
+        public final int idx;
+        public final int cidx;
+
+        TwoPin(Node one, Node two) {
+            if (one != null) setOne(one);
+            if (two != null) setTwo(two);
+
+            // Maintain a global ID for components in the circuit...
+            idx = nextIdx++;
+            components.add(this);
+
+            // ...and a component-specific one
+            cidx = nextCIdx.computeIfAbsent(this.getClass(), c -> 0);
+            nextCIdx.put(this.getClass(), cidx + 1);
+        }
+
+        public Node one() {
+            if (one == null) one = new Node(this);
+
+            return one;
+        }
+
+        public Node two() {
+            if (two == null) two = new Node(this);
+
+            return two;
+        }
+
+        public void setOne(Node n) {
+            one = n.add(this);
+        }
+
+        public void setTwo(Node n) {
+            two = n.add(this);
+        }
+
+        public String toString() {
+            return name() + "[" +
+                    "one=" + one + ", " +
+                    "two=" + two + extraInfo() + "]";
+        }
+
+        public String extraInfo() {
+            return "";
+        }
+
+        public abstract String name();
+        public abstract String addToEquation();
+    }
+
+    public final class Resistor extends TwoPin {
+        public final double resistance;
+
+        /**
+         * @param one        component attached to pin 1
+         * @param two        component attached to pin 2
+         * @param resistance in ohms
+         */
+        Resistor(Node one, Node two, double resistance) {
+            super(one, two);
+            this.resistance = resistance;
+        }
+
+        Resistor(double resistance) {
+            this(null, null, resistance);
+        }
+
+        @Override
+        public String extraInfo() {
+            return ", resistance=" + resistance;
+        }
+
+        @Override
+        public String name() {
+            return "R" + cidx;
+        }
+
+        @Override
+        public String addToEquation() {
+            return "I" + name() + "*" + resistance;
+        }
+    }
+
+    public final class VoltSource extends TwoPin {
+        public final double voltage;
+
+        /**
+         * @param low     component attached to the negative side
+         * @param high    component attached to the positive side
+         * @param voltage voltage difference between sides
+         */
+        VoltSource(Node low, Node high, double voltage) {
+            super(low, high);
+            this.voltage = voltage;
+        }
+
+        VoltSource(double voltage) {
+            this(null, null, voltage);
+        }
+
+        @Override
+        public String extraInfo() {
+            return ", voltage=" + voltage;
+        }
+
+        @Override
+        public String name() {
+            return "VoltSource";
+        }
+
+        @Override
+        public String addToEquation() {
+            return voltage + "V";
+        }
+
+        public Node low() { return one(); }
+        public Node high() { return two(); }
+        public void setLow(Node n) { setOne(n); }
+        public void setHigh(Node n) { setTwo(n); }
+    }
+}

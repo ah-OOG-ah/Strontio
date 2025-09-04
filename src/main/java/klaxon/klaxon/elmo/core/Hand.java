@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import klaxon.klaxon.elmo.core.cas.JunctionEq;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,32 +19,34 @@ public class Hand {
         printKirchoffs(superCircuit());
     }
 
-    private static TwoPin linearCircuit(double voltage) {
-        final var battery = new VoltSource(voltage);
-        final var r1 = new Resistor(battery.high(), null, 468, 1);
-        final var r2 = new Resistor(r1.two(), battery.low(), 621, 2);
-        final var r3 = new Resistor(r1.two(), null, 2_210, 3);
-        final var r4 = new Resistor(r3.two(), battery.low(), 749, 4);
-        final var r5 = new Resistor(r3.two(), battery.low(), 998, 5);
-        validate(battery, r1, r2, r3, r4, r5);
+    private static Circuit linearCircuit(double voltage) {
+        final var ret = new Circuit();
+        final var battery = ret.new VoltSource(voltage);
+        final var r1 = ret.new Resistor(battery.high(), null, 468);
+        final var r2 = ret.new Resistor(r1.two(), battery.low(), 621);
+        final var r3 = ret.new Resistor(r1.two(), null, 2_210);
+        final var r4 = ret.new Resistor(r3.two(), battery.low(), 749);
+        final var r5 = ret.new Resistor(r3.two(), battery.low(), 998);
+        validate(ret);
 
-        return battery;
+        return ret;
     }
 
-    private static TwoPin superCircuit() {
-        final var b1 = new VoltSource(10);
-        final var r1 = new Resistor(b1.high(), null, 470, 1);
-        final var r2 = new Resistor(r1.two(), b1.low(), 620, 2);
-        final var r3 = new Resistor(r1.two(), null, 2_200, 3);
-        final var rL = new Resistor(r3.two(), b1.low(), 750, 4);
-        final var r5 = new Resistor(b1.low(), null, 1_000, 5);
-        final var b2 = new VoltSource(r5.two(), r3.two(), 5);
-        validate(b1, r1, r2, r3, rL, r5, b2);
+    private static Circuit superCircuit() {
+        final var ret = new Circuit();
+        final var b1 = ret.new VoltSource(10);
+        final var r1 = ret.new Resistor(b1.high(), null, 470);
+        final var r2 = ret.new Resistor(r1.two(), b1.low(), 620);
+        final var r3 = ret.new Resistor(r1.two(), null, 2_200);
+        final var rL = ret.new Resistor(r3.two(), b1.low(), 750);
+        final var r5 = ret.new Resistor(b1.low(), null, 1_000);
+        final var b2 = ret.new VoltSource(r5.two(), r3.two(), 5);
+        validate(ret);
 
-        return b1;
+        return ret;
     }
 
-    private static void printKirchoffs(TwoPin v) {
+    private static void printKirchoffs(Circuit v) {
         final var kirchoff = generateLoops(v);
         LOGGER.info("Printing Kirchhoff equations...");
         for (var l : kirchoff.loops) {
@@ -53,19 +55,57 @@ public class Hand {
         for (var e : generateJunctions(kirchoff)) {
             LOGGER.info("{}", e);
         }
+
+        printMatrix(kirchoff);
     }
 
-    static Kirchoff generateLoops(TwoPin v) {
+    /// The goal here is to print out a matrix for solving resistor current.
+    /// To that end - we first take the loop equations, then fill out the matrix with junction equations.
+    private static void printMatrix(Kirchoff k) {
+        LOGGER.info("Matrix(RR, [");
+
+        final int terms = k.components.size() + 1;
+        final var loops = k.loops;
+        for (final var loop : loops) {
+            final var elements = loop.getElements();
+
+            // Set up one row of the matrix
+            final double[] nums = new double[terms];
+
+            // Find the known voltage around the loop and fill in resistor info
+            double voltage = 0.0;
+            for (var e : elements) {
+                if (e.t() instanceof Circuit.VoltSource v) {
+                    voltage += e.forwards() ? v.voltage : -v.voltage;
+                } else if (e.t() instanceof Circuit.Resistor r) {
+                    nums[r.idx] = e.forwards() ? r.resistance : -r.resistance;
+                }
+            }
+
+            nums[terms - 1] = voltage;
+            LOGGER.info("{},", nums);
+        }
+
+        var junctions = generateJunctions(k);
+        for (var j : junctions) {
+            LOGGER.info("{},", j);
+        }
+
+        LOGGER.info("]).rref()");
+    }
+
+    static Kirchoff generateLoops(Circuit circuit) {
         // Starting from the battery, we breadth-first search.
         // Get everything attached to the battery, and start loops from them.
         var heads = new ArrayDeque<TwoPinLoop>();
         var loops = new ArrayList<TwoPinLoop>();
-        var components = new HashMap<TwoPin, MetaTwoPin>();
+        var components = new HashMap<Circuit.TwoPin, MetaTwoPin>();
+        var nodes = new HashSet<Node>();
+        final var first = circuit.components.getFirst();
 
-
-        final var entryPoint = new MetaTwoPin(v, true);
+        final var entryPoint = new MetaTwoPin(first, true);
         heads.add(new TwoPinLoop(entryPoint));
-        components.put(v, entryPoint);
+        components.put(first, entryPoint);
 
         // BFS! For each component, continue the loop. If there are multiple options, copy the loop and keep going. Kill
         // loops that repeat elements.
@@ -73,8 +113,9 @@ public class Hand {
             var loop = heads.remove();
             var head = loop.getLast();
             var node = head.next();
+            nodes.add(node);
 
-            if (node == (v.one)) {
+            if (node == (first.one())) {
                 // This loop is done, send it!
                 loops.add(loop);
                 continue;
@@ -89,34 +130,36 @@ public class Hand {
                 // No step back!
                 if (c == head.t()) continue;
 
-                boolean forwards = c.one == node;
+                boolean forwards = c.one() == node;
                 final var mtp = new MetaTwoPin(c, forwards);
                 components.put(c, mtp);
                 heads.add(new TwoPinLoop(loop, mtp));
             }
         }
 
-        return new Kirchoff(components, loops);
+        return new Kirchoff(components, nodes, loops);
     }
 
-    static List<JunctionEq> generateJunctions(Kirchoff kirchoff) {
-        final var ret = new ArrayList<JunctionEq>();
+    static List<double[]> generateJunctions(Kirchoff kirchoff) {
         final var lookup = kirchoff.components;
-        for (var e : lookup.entrySet()) {
-            final var k = e.getKey();
-            if (!(k instanceof Resistor r)) continue;
+        final var ret = new ArrayList<double[]>();
 
-            final var mtp = e.getValue();
-            final var downstreams = new HashSet<>(mtp.sinks());
-            var nonResistor = downstreams.stream().filter(c -> !(c instanceof Resistor)).findAny();
-            while (nonResistor.isPresent()) {
-                var nr = nonResistor.get();
-                downstreams.remove(nr);
-                downstreams.addAll(lookup.get(nr).sinks());
-                nonResistor = downstreams.stream().filter(c -> !(c instanceof Resistor)).findAny();
+        // One term per component, plus the voltage sum
+        final int nTerms = lookup.size() + 1;
+        for (var node : kirchoff.nodes) {
+            // Add each component to the equation
+            var equation = new double[nTerms];
+            for (var c : node.components) {
+                var mtp = lookup.get(c);
+                var forwards = mtp.forwards();
+                var startsHere = c.one() == node;
+
+                // If the component is draining current, subtract our current
+                if ((forwards && startsHere) || (!forwards && !startsHere)) equation[c.idx] = -1;
+                else equation[c.idx] = 1; // otherwise, we're dumping current in
             }
 
-            ret.add(new JunctionEq(r, downstreams.stream().map(lookup::get).toList()));
+            ret.add(equation);
         }
 
         return ret;
@@ -124,10 +167,10 @@ public class Hand {
 
     /// Throws an exception if any component has a null pin
     /// TODO: make this more thorough
-    static void validate(TwoPin... components) {
+    static void validate(Circuit circuit) {
         var ret = true;
-        for (var c : components) {
-            if (c.one == null || c.two == null) {
+        for (var c : circuit.components) {
+            if (c.one() == null || c.two() == null) {
                 LOGGER.error("Component validation failed! Component: {}", c);
                 ret = false;
             }
@@ -137,48 +180,22 @@ public class Hand {
         else throw new RuntimeException("Validation failure!");
     }
 
-    public static abstract class TwoPin {
-        private Node one;
-        private Node two;
+    static final class Kirchoff {
+        private final Map<Circuit.TwoPin, MetaTwoPin> components;
+        private final Set<Node> nodes;
+        private final List<TwoPinLoop> loops;
+        public final int resistorCount;
 
-        TwoPin(Node one, Node two) {
-            if (one != null) setOne(one);
-            if (two != null) setTwo(two);
+        Kirchoff(Map<Circuit.TwoPin, MetaTwoPin> components, Set<Node> nodes, List<TwoPinLoop> loops) {
+            this.components = components;
+            this.nodes = nodes;
+            this.loops = loops;
+
+            int rc = 0;
+            for (final var e : components.keySet()) {
+                if (e instanceof Circuit.Resistor) ++rc;
+            }
+            resistorCount = rc;
         }
-
-        public Node one() {
-            if (one == null) one = new Node(this);
-
-            return one;
-        }
-
-        public Node two() {
-            if (two == null) two = new Node(this);
-
-            return two;
-        }
-
-        public void setOne(Node n) {
-            one = n.add(this);
-        }
-
-        public void setTwo(Node n) {
-            two = n.add(this);
-        }
-
-        public String toString() {
-            return name() + "[" +
-                    "one=" + one + ", " +
-                    "two=" + two + extraInfo() + "]";
-        }
-
-        public String extraInfo() {
-            return "";
-        }
-
-        public abstract String name();
-        public abstract String addToEquation();
     }
-
-    record Kirchoff(Map<TwoPin, MetaTwoPin> components, List<TwoPinLoop> loops) {}
 }

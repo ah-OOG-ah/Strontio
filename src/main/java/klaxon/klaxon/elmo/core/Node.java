@@ -4,15 +4,15 @@ import java.util.LinkedHashSet;
 import org.jetbrains.annotations.Contract;
 
 class Node {
-    LinkedHashSet<Hand.TwoPin> components = new LinkedHashSet<>();
+    LinkedHashSet<Circuit.TwoPin> components = new LinkedHashSet<>();
 
     public Node() {}
-    public Node(Hand.TwoPin t) {
+    public Node(Circuit.TwoPin t) {
         components.add(t);
     }
 
     @Contract("_ -> this")
-    Node add(Hand.TwoPin t) { components.add(t); return this; }
+    Node add(Circuit.TwoPin t) { components.add(t); return this; }
 
     @Override
     public String toString() {

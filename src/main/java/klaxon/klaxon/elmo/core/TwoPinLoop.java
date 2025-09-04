@@ -1,5 +1,6 @@
 package klaxon.klaxon.elmo.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -57,5 +58,8 @@ public class TwoPinLoop {
 
     MetaTwoPin getLast() {
         return loopElements.getLast();
+    }
+    List<MetaTwoPin> getElements() {
+        return new ArrayList<>(loopElements);
     }
 }
