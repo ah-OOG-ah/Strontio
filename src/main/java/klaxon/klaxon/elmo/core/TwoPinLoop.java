@@ -8,7 +8,7 @@ import java.util.List;
 
 public class TwoPinLoop {
     private final LinkedHashSet<MetaTwoPin> loopElements = new LinkedHashSet<>();
-    private final HashSet<Node> seen = new HashSet<>();
+    private final HashSet<Circuit.Node> seen = new HashSet<>();
 
     public TwoPinLoop() {}
     TwoPinLoop(MetaTwoPin... t) { addAll(List.of(t)); }
@@ -30,18 +30,6 @@ public class TwoPinLoop {
         return ret.toString();
     }
 
-    public String toEquation() {
-        StringBuilder equation = new StringBuilder("0 = ");
-        for (var e : loopElements) {
-            equation.append(e.toTerm());
-            equation.append(" + ");
-        }
-
-        var l = equation.length();
-        equation.delete(l - 2, l); // trim the trailing " +"
-        return equation.toString();
-    }
-
     void add(MetaTwoPin t) {
         loopElements.add(t);
         seen.add(t.previous());
@@ -52,7 +40,7 @@ public class TwoPinLoop {
         seen.addAll(t.stream().map(MetaTwoPin::previous).toList());
     }
 
-    boolean contains(Node n) {
+    boolean contains(Circuit.Node n) {
         return seen.contains(n);
     }
 

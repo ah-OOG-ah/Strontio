@@ -2,10 +2,12 @@ package klaxon.klaxon.elmo.core;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import org.jetbrains.annotations.Contract;
 
 public class Circuit {
     private int nextIdx = 0;
-    private HashMap<Class<? extends TwoPin>, Integer> nextCIdx = new HashMap<>();
+    private final HashMap<Class<? extends TwoPin>, Integer> nextCIdx = new HashMap<>();
     public ArrayList<TwoPin> components = new ArrayList<>();
 
     public abstract sealed class TwoPin permits Resistor, VoltSource {
@@ -128,7 +130,21 @@ public class Circuit {
 
         public Node low() { return one(); }
         public Node high() { return two(); }
-        public void setLow(Node n) { setOne(n); }
-        public void setHigh(Node n) { setTwo(n); }
+    }
+
+    public class Node {
+        LinkedHashSet<TwoPin> components = new LinkedHashSet<>();
+
+        public Node(TwoPin t) {
+            components.add(t);
+        }
+
+        @Contract("_ -> this")
+        Node add(TwoPin t) { components.add(t); return this; }
+
+        @Override
+        public String toString() {
+            return "Node[connections=" + components.size() + "]";
+        }
     }
 }

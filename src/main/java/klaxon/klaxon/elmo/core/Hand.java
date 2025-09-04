@@ -15,6 +15,8 @@ public class Hand {
 
     static void main(String[] ignoredArgs) {
         // Generate Kirchhoff loops and print
+        printKirchoffs(linearCircuit(5));
+        printKirchoffs(linearCircuit(10));
         printKirchoffs(linearCircuit(15));
         printKirchoffs(superCircuit());
     }
@@ -49,12 +51,6 @@ public class Hand {
     private static void printKirchoffs(Circuit v) {
         final var kirchoff = generateLoops(v);
         LOGGER.info("Printing Kirchhoff equations...");
-        for (var l : kirchoff.loops) {
-            LOGGER.info("{}", l.toEquation());
-        }
-        for (var e : generateJunctions(kirchoff)) {
-            LOGGER.info("{}", e);
-        }
 
         printMatrix(kirchoff);
     }
@@ -100,7 +96,7 @@ public class Hand {
         var heads = new ArrayDeque<TwoPinLoop>();
         var loops = new ArrayList<TwoPinLoop>();
         var components = new HashMap<Circuit.TwoPin, MetaTwoPin>();
-        var nodes = new HashSet<Node>();
+        var nodes = new HashSet<Circuit.Node>();
         final var first = circuit.components.getFirst();
 
         final var entryPoint = new MetaTwoPin(first, true);
@@ -182,11 +178,11 @@ public class Hand {
 
     static final class Kirchoff {
         private final Map<Circuit.TwoPin, MetaTwoPin> components;
-        private final Set<Node> nodes;
+        private final Set<Circuit.Node> nodes;
         private final List<TwoPinLoop> loops;
         public final int resistorCount;
 
-        Kirchoff(Map<Circuit.TwoPin, MetaTwoPin> components, Set<Node> nodes, List<TwoPinLoop> loops) {
+        Kirchoff(Map<Circuit.TwoPin, MetaTwoPin> components, Set<Circuit.Node> nodes, List<TwoPinLoop> loops) {
             this.components = components;
             this.nodes = nodes;
             this.loops = loops;
