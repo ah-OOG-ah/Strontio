@@ -42,7 +42,7 @@ public class Matrix {
     public void swap(int row1, int row2, double[] scratch) {
         arraycopy(backing, rowIdx(row1), scratch, 0, cols);          // row 1 -> scratch
         arraycopy(backing, rowIdx(row2), backing, rowIdx(row1), cols);       // row 2 -> row 1
-        arraycopy(scratch, 0, backing, rowIdx(row1), cols);          // scratch -> row 2
+        arraycopy(scratch, 0, backing, rowIdx(row2), cols);          // scratch -> row 2
     }
 
     @Override

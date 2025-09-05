@@ -18,7 +18,7 @@ public class MatrixUtils {
             var pivot = 0.0;
             int newPivotRow = pivotRow;
             for (int i = 0; i < matH; ++i) {
-                if (pivot < abs(matrix.get(i, pivotCol))) {
+                if (abs(pivot) < abs(matrix.get(i, pivotCol))) {
                     newPivotRow = i;
                     pivot = matrix.get(i, pivotCol);
                 }
