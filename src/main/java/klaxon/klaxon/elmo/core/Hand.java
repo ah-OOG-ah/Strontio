@@ -1,5 +1,7 @@
 package klaxon.klaxon.elmo.core;
 
+import static java.lang.System.arraycopy;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,6 +9,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import klaxon.klaxon.elmo.core.math.Matrix;
+import klaxon.klaxon.elmo.core.math.MatrixUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +66,11 @@ public class Hand {
 
         final int terms = k.components.size() + 1;
         final var loops = k.loops;
+        var junctions = generateJunctions(k);
+
+        final var mat = new Matrix(terms, loops.size() + junctions.size());
+        var ridx = 0;
+
         for (final var loop : loops) {
             final var elements = loop.getElements();
 
@@ -80,14 +89,25 @@ public class Hand {
 
             nums[terms - 1] = voltage;
             LOGGER.info("{},", nums);
+
+            mat.setRow(ridx++, nums);
         }
 
-        var junctions = generateJunctions(k);
         for (var j : junctions) {
             LOGGER.info("{},", j);
+
+            mat.setRow(ridx++, j);
         }
 
-        LOGGER.info("]).rref()");
+        LOGGER.info("]).rref()\n\n");
+
+        MatrixUtils.reduceMatrix(mat);
+
+        double[] tmp = new double[terms];
+        for (int i = 0; i < mat.length; i += terms) {
+            arraycopy(mat.backing, i, tmp, 0, tmp.length);
+            LOGGER.info("{},", tmp);
+        }
     }
 
     static Kirchoff generateLoops(Circuit circuit) {
