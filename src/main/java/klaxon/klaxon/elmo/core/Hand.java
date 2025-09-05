@@ -1,7 +1,5 @@
 package klaxon.klaxon.elmo.core;
 
-import static java.lang.System.arraycopy;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -103,11 +101,7 @@ public class Hand {
 
         MatrixUtils.reduceMatrix(mat);
 
-        double[] tmp = new double[terms];
-        for (int i = 0; i < mat.length; i += terms) {
-            arraycopy(mat.backing, i, tmp, 0, tmp.length);
-            LOGGER.info("{},", tmp);
-        }
+        LOGGER.info("{}", mat);
     }
 
     static Kirchoff generateLoops(Circuit circuit) {

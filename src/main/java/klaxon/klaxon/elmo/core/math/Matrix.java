@@ -2,6 +2,8 @@ package klaxon.klaxon.elmo.core.math;
 
 import static java.lang.System.arraycopy;
 
+import java.util.Arrays;
+
 public class Matrix {
     public final double[] backing;
     public final int rows;
@@ -41,5 +43,21 @@ public class Matrix {
         arraycopy(backing, rowIdx(row1), scratch, 0, cols);          // row 1 -> scratch
         arraycopy(backing, rowIdx(row2), backing, rowIdx(row1), cols);       // row 2 -> row 1
         arraycopy(scratch, 0, backing, rowIdx(row1), cols);          // scratch -> row 2
+    }
+
+    @Override
+    public String toString() {
+        double[] tmp = getScratchRow();
+        StringBuilder ret = new StringBuilder("[\n");
+        for (int i = 0; i < length; i += cols) {
+            arraycopy(backing, i, tmp, 0, tmp.length);
+            ret.append(Arrays.toString(tmp)).append(",\n");
+        }
+
+        final var len = ret.length();
+        ret.delete(len - 2, len);
+        ret.append("]");
+
+        return ret.toString();
     }
 }
