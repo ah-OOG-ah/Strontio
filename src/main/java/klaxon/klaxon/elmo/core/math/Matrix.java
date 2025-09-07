@@ -1,14 +1,21 @@
 package klaxon.klaxon.elmo.core.math;
 
+import static java.lang.Math.fma;
 import static java.lang.System.arraycopy;
+import static jdk.incubator.vector.DoubleVector.broadcast;
+import static jdk.incubator.vector.DoubleVector.fromArray;
 
 import java.util.Arrays;
+import jdk.incubator.vector.DoubleVector;
+import jdk.incubator.vector.VectorSpecies;
 
 public class Matrix {
     public final double[] backing;
     public final int rows;
     public final int cols;
     public final int length;
+
+    private static final VectorSpecies<Double> SPECIES = DoubleVector.SPECIES_PREFERRED;
 
     public Matrix(int rows, int cols) {
         this.rows = rows;
@@ -37,6 +44,20 @@ public class Matrix {
 
     public void setRow(int row, double[] values) {
         arraycopy(values, 0, backing, rowIdx(row), cols);
+    }
+
+    /**
+     * Multiplies row1 by factor, then accumulates it to row2
+     */
+    public void fmaRow(int row1, int row2, double factor) {
+        int i = 0;
+        final var vfactor = broadcast(SPECIES, factor);
+        for (; i < cols; i += SPECIES.length()) {
+            final var mask = SPECIES.indexInRange(i, cols);
+            final var vrow1 = fromArray(SPECIES, backing, idx(row1, i), mask);
+            final var vrow2 = fromArray(SPECIES, backing, idx(row2, i), mask);
+            vrow1.fma(vfactor, vrow2).intoArray(backing, idx(row2, i));
+        }
     }
 
     public void swap(int row1, int row2, double[] scratch) {

@@ -29,14 +29,23 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
+val vectorArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.vector")
+
 application {
     mainClass = "klaxon.klaxon.elmo.core.Hand"
+    applicationDefaultJvmArgs += vectorArgs
 }
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
+        sourceCompatibility = JavaVersion.VERSION_25
+        targetCompatibility = JavaVersion.VERSION_25
     }
+}
+
+tasks.withType<JavaCompile> {
+    options.compilerArgs.addAll(vectorArgs)
 }
 
 tasks.test {
