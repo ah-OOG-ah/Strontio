@@ -50,13 +50,21 @@ public class Matrix {
      * Multiplies row1 by factor, then accumulates it to row2
      */
     public void fmaRow(int row1, int row2, double factor) {
-        int i = 0;
         final var vfactor = broadcast(SPECIES, factor);
-        for (; i < cols; i += SPECIES.length()) {
+        for (int i = 0; i < cols; i += SPECIES.length()) {
             final var mask = SPECIES.indexInRange(i, cols);
             final var vrow1 = fromArray(SPECIES, backing, idx(row1, i), mask);
             final var vrow2 = fromArray(SPECIES, backing, idx(row2, i), mask);
             vrow1.fma(vfactor, vrow2).intoArray(backing, idx(row2, i), mask);
+        }
+    }
+
+    /**
+     * Multiplies row1 by factor, then accumulates it to row2
+     */
+    public void fmaRowScalar(int row1, int row2, double factor) {
+        for (int i = 0; i < cols; ++i) {
+            backing[idx(row2, i)] = fma(backing[idx(row1, i)], factor, backing[idx(row2, i)]);
         }
     }
 
