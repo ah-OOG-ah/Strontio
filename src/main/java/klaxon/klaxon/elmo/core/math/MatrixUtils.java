@@ -17,7 +17,7 @@ public class MatrixUtils {
             // Find the highest value in this column, that'll be the pivot
             var pivot = 0.0;
             int newPivotRow = pivotRow;
-            for (int i = 0; i < matH; ++i) {
+            for (int i = pivotRow; i < matH; ++i) {
                 if (abs(pivot) < abs(matrix.get(i, pivotCol))) {
                     newPivotRow = i;
                     pivot = matrix.get(i, pivotCol);
