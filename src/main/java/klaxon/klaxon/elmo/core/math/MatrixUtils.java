@@ -30,13 +30,16 @@ public class MatrixUtils {
 
             matrix.swap(newPivotRow, pivotRow, scratch);
 
+            // For each row below the pivot...
             for (int i = pivotRow + 1; i < matH; ++i) {
-                var f = matrix.get(i, pivotCol) / matrix.get(pivotRow, pivotCol);
+
+                // Divide the first element of the row by the first element of the pivot. That way, when we subtract the
+                // pivot row times -factor from the row below, you get 0 in the pivot column.
+                var factor = matrix.get(i, pivotCol) / matrix.get(pivotRow, pivotCol);
+                matrix.fmaRow(pivotRow, i, -factor);
+
+                // Set the pivot element to 0, because floats are hard and we *know* it should be zero
                 matrix.set(i, pivotCol, 0);
-                for (int j = pivotCol + 1; j < matW; ++j) {
-                    var v = matrix.get(i, j) - matrix.get(pivotRow, j) * f;
-                    matrix.set(i, j, v);
-                }
             }
 
             pivotCol++;

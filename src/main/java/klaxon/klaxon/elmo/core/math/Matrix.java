@@ -56,7 +56,7 @@ public class Matrix {
             final var mask = SPECIES.indexInRange(i, cols);
             final var vrow1 = fromArray(SPECIES, backing, idx(row1, i), mask);
             final var vrow2 = fromArray(SPECIES, backing, idx(row2, i), mask);
-            vrow1.fma(vfactor, vrow2).intoArray(backing, idx(row2, i));
+            vrow1.fma(vfactor, vrow2).intoArray(backing, idx(row2, i), mask);
         }
     }
 
