@@ -50,4 +50,9 @@ tasks.withType<JavaCompile> {
 
 tasks.test {
     useJUnitPlatform()
+    allJvmArgs = allJvmArgs.toMutableList() + vectorArgs
+}
+
+tasks.jmh {
+    jvmArgsAppend = vectorArgs + listOf("-XX:+AdjustStackSizeForTLS")
 }

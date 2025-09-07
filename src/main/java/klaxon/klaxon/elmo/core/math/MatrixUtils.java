@@ -7,7 +7,7 @@ public class MatrixUtils {
     public static void reduceMatrix(Matrix matrix) {
         final int matW = matrix.cols;
         final int matH = matrix.rows;
-        final double[] scratch = matrix.getScratchRow();
+        final var scratch = matrix.getScratchRow();
 
         int pivotRow = 0;
         int pivotCol = 0;
@@ -31,12 +31,13 @@ public class MatrixUtils {
             matrix.swap(newPivotRow, pivotRow, scratch);
 
             // For each row below the pivot...
+            final var rf = 1 / matrix.get(pivotRow, pivotCol);
             for (int i = pivotRow + 1; i < matH; ++i) {
 
                 // Divide the first element of the row by the first element of the pivot. That way, when we subtract the
                 // pivot row times -factor from the row below, you get 0 in the pivot column.
-                var factor = matrix.get(i, pivotCol) / matrix.get(pivotRow, pivotCol);
-                matrix.fmaRow(pivotRow, i, -factor);
+                final var factor = matrix.get(i, pivotCol) * rf;
+                matrix.fmaRowUnmask(pivotRow, i, -factor, pivotCol + 1);
 
                 // Set the pivot element to 0, because floats are hard and we *know* it should be zero
                 matrix.set(i, pivotCol, 0);

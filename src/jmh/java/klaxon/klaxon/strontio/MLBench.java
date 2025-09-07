@@ -1,11 +1,15 @@
 package klaxon.klaxon.strontio;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.fma;
+import static java.lang.Math.max;
 import static java.lang.Math.round;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import klaxon.klaxon.elmo.core.math.Matrix;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -19,59 +23,218 @@ import org.openjdk.jmh.annotations.Warmup;
 
 @State(Scope.Thread)
 public class MLBench {
-    private Perceptron p;
-    private ArrayList<Pop> POPULATION = new ArrayList<>();
+    private static final boolean NARROW = true;
+    private final Matrix MATRIX = NARROW
+            ? new Matrix(78, 27)
+            : new Matrix(27, 78);
+    private final Random RANDOM = new Random(1337);
 
     @Setup
     public void setup() {
-        p = new Perceptron(new float[]{1, 1}, 0.5f, new Function<>() {
-            @Override
-            public Float apply(Float f) {
-                return (float) round(f);
-            }
-
-            @Override
-            public String toString() {
-                return "f -> (float) round(f)";
-            }
-        });
-
-        POPULATION.add(new Pop(34, 128, false));
-        POPULATION.add(new Pop(35, 150, false));
-        POPULATION.add(new Pop(40, 144, false));
-        POPULATION.add(new Pop(50, 150, false));
-        POPULATION.add(new Pop(40, 110, true));
-        POPULATION.add(new Pop(60, 120, true));
-        POPULATION.add(new Pop(75, 108, true));
-        POPULATION.add(new Pop(80, 144, true));
+        for (int i = 0; i < MATRIX.length; ++i) {
+            MATRIX.backing[i] = RANDOM.nextFloat();
+        }
     }
 
     @Benchmark
     @Measurement(time = 5, iterations = 3)
     @BenchmarkMode(Mode.AverageTime)
-    @OutputTimeUnit(TimeUnit.MICROSECONDS)
-    @Fork(1)
-    @Warmup(iterations = 1)
-    public void trainPerceptron() {
-        float lastHit = 0;
-        var lastPerceptron = p;
+    @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @Fork(2)
+    @Warmup(iterations = 2)
+    public void reduceMatrixVector() {
+        final int matW = MATRIX.cols;
+        final int matH = MATRIX.rows;
+        final var scratch = MATRIX.getScratchRow();
 
-        while (true) {
-            float hitrate = 0;
-            for (var pop : POPULATION) {
-                final var result = p.accept(new float[]{pop.weight(), pop.height()}) > 0;
-                final var correct = result == pop.obese();
-                hitrate += correct ? (100.0f / POPULATION.size()) : 0.0f;
+        int pivotRow = 0;
+        int pivotCol = 0;
+
+        // Shamelessly stolen from wikipedia
+        while (pivotRow < matW && pivotCol < matH) {
+            // Find the highest value in this column, that'll be the pivot
+            var pivot = 0.0;
+            int newPivotRow = pivotRow;
+            for (int i = pivotRow; i < matH; ++i) {
+                if (abs(pivot) < abs(MATRIX.get(i, pivotCol))) {
+                    newPivotRow = i;
+                    pivot = MATRIX.get(i, pivotCol);
+                }
             }
 
-            if (lastHit > hitrate) p = lastPerceptron;
-            else {
-                lastPerceptron = p;
-                lastHit = hitrate;
-                p = p.mutate(0.5f);
+            if (pivot == 0.0) {
+                pivotCol++; continue;
             }
 
-            if (abs(hitrate - 100.0) < 0.01) return;
+            MATRIX.swap(newPivotRow, pivotRow, scratch);
+
+            // For each row below the pivot...
+            final var rf = 1 / MATRIX.get(pivotRow, pivotCol);
+            for (int i = pivotRow + 1; i < matH; ++i) {
+
+                // Divide the first element of the row by the first element of the pivot. That way, when we subtract the
+                // pivot row times -factor from the row below, you get 0 in the pivot column.
+                final var factor = MATRIX.get(i, pivotCol) * rf;
+                MATRIX.fmaRowPartial(pivotRow, i, -factor, pivotCol + 1);
+
+                // Set the pivot element to 0, because floats are hard and we *know* it should be zero
+                MATRIX.set(i, pivotCol, 0);
+            }
+
+            pivotCol++;
+            pivotRow++;
+        }
+    }
+
+    @Benchmark
+    @Measurement(time = 5, iterations = 3)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @Fork(2)
+    @Warmup(iterations = 2)
+    public void reduceMatrixVUnmask() {
+        final int matW = MATRIX.cols;
+        final int matH = MATRIX.rows;
+        final var scratch = MATRIX.getScratchRow();
+
+        int pivotRow = 0;
+        int pivotCol = 0;
+
+        // Shamelessly stolen from wikipedia
+        while (pivotRow < matW && pivotCol < matH) {
+            // Find the highest value in this column, that'll be the pivot
+            var pivot = 0.0;
+            int newPivotRow = pivotRow;
+            for (int i = pivotRow; i < matH; ++i) {
+                if (abs(pivot) < abs(MATRIX.get(i, pivotCol))) {
+                    newPivotRow = i;
+                    pivot = MATRIX.get(i, pivotCol);
+                }
+            }
+
+            if (pivot == 0.0) {
+                pivotCol++; continue;
+            }
+
+            MATRIX.swap(newPivotRow, pivotRow, scratch);
+
+            // For each row below the pivot...
+            final var rf = 1 / MATRIX.get(pivotRow, pivotCol);
+            for (int i = pivotRow + 1; i < matH; ++i) {
+
+                // Divide the first element of the row by the first element of the pivot. That way, when we subtract the
+                // pivot row times -factor from the row below, you get 0 in the pivot column.
+                final var factor = MATRIX.get(i, pivotCol) * rf;
+                MATRIX.fmaRowUnmask(pivotRow, i, -factor, pivotCol + 1);
+
+                // Set the pivot element to 0, because floats are hard and we *know* it should be zero
+                MATRIX.set(i, pivotCol, 0);
+            }
+
+            pivotCol++;
+            pivotRow++;
+        }
+    }
+
+    @Benchmark
+    @Measurement(time = 5, iterations = 3)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @Fork(2)
+    @Warmup(iterations = 2)
+    public void reduceMatrixScalar() {
+        final int matW = MATRIX.cols;
+        final int matH = MATRIX.rows;
+        final var scratch = MATRIX.getScratchRow();
+
+        int pivotRow = 0;
+        int pivotCol = 0;
+
+        // Shamelessly stolen from wikipedia
+        while (pivotRow < matW && pivotCol < matH) {
+            // Find the highest value in this column, that'll be the pivot
+            var pivot = 0.0;
+            int newPivotRow = pivotRow;
+            for (int i = pivotRow; i < matH; ++i) {
+                if (abs(pivot) < abs(MATRIX.get(i, pivotCol))) {
+                    newPivotRow = i;
+                    pivot = MATRIX.get(i, pivotCol);
+                }
+            }
+
+            if (pivot == 0.0) {
+                pivotCol++; continue;
+            }
+
+            MATRIX.swap(newPivotRow, pivotRow, scratch);
+
+            // For each row below the pivot...
+            final var rf = 1 / MATRIX.get(pivotRow, pivotCol);
+            for (int i = pivotRow + 1; i < matH; ++i) {
+
+                // Divide the first element of the row by the first element of the pivot. That way, when we subtract the
+                // pivot row times -factor from the row below, you get 0 in the pivot column.
+                final var factor = MATRIX.get(i, pivotCol) * rf;
+                MATRIX.fmaRowScalar(pivotRow, i, -factor, pivotCol + 1);
+
+                // Set the pivot element to 0, because floats are hard and we *know* it should be zero
+                MATRIX.set(i, pivotCol, 0);
+            }
+
+            pivotCol++;
+            pivotRow++;
+        }
+    }
+
+    @Benchmark
+    @Measurement(time = 5, iterations = 3)
+    @BenchmarkMode(Mode.AverageTime)
+    @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @Fork(2)
+    @Warmup(iterations = 2)
+    public void reduceMatrixWP() {
+        final int matW = MATRIX.cols;
+        final int matH = MATRIX.rows;
+        final var scratch = MATRIX.getScratchRow();
+
+        int pivotRow = 0;
+        int pivotCol = 0;
+
+        // Shamelessly stolen from wikipedia
+        while (pivotRow < matW && pivotCol < matH) {
+            // Find the highest value in this column, that'll be the pivot
+            var pivot = 0.0;
+            int newPivotRow = pivotRow;
+            for (int i = pivotRow; i < matH; ++i) {
+                if (abs(pivot) < abs(MATRIX.get(i, pivotCol))) {
+                    newPivotRow = i;
+                    pivot = MATRIX.get(i, pivotCol);
+                }
+            }
+
+            if (pivot == 0.0) {
+                pivotCol++; continue;
+            }
+
+            MATRIX.swap(newPivotRow, pivotRow, scratch);
+
+            // For each row below the pivot...
+            final var rf = 1 / MATRIX.get(pivotRow, pivotCol);
+            for (int i = pivotRow + 1; i < matH; ++i) {
+                final var f = MATRIX.get(i, pivotCol) * rf;
+
+                // Set the pivot element to 0, because floats are hard and we *know* it should be zero
+                MATRIX.set(i, pivotCol, 0);
+
+                // Subtract the pivot row times f from the lower row
+                for (int j = pivotCol + 1; j < matW; ++j) {
+                    final var v = fma(MATRIX.get(pivotRow, j), -f, MATRIX.get(i, j));
+                    MATRIX.set(i, j, v);
+                }
+            }
+
+            pivotCol++;
+            pivotRow++;
         }
     }
 }

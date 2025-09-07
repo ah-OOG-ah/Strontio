@@ -23,7 +23,7 @@ public class Hand {
         printKirchoffs(superCircuit());
     }
 
-    private static Circuit linearCircuit(double voltage) {
+    private static Circuit linearCircuit(float voltage) {
         final var ret = new Circuit();
         final var battery = ret.new VoltSource(voltage);
         final var r1 = ret.new Resistor(battery.high(), null, 468);
@@ -73,10 +73,10 @@ public class Hand {
             final var elements = loop.getElements();
 
             // Set up one row of the matrix
-            final double[] nums = new double[terms];
+            final var nums = new float[terms];
 
             // Find the known voltage around the loop and fill in resistor info
-            double voltage = 0.0;
+            var voltage = 0f;
             for (var e : elements) {
                 if (e.t() instanceof Circuit.VoltSource v) {
                     voltage += e.forwards() ? v.voltage : -v.voltage;
@@ -150,15 +150,15 @@ public class Hand {
         return new Kirchoff(components, nodes, loops);
     }
 
-    static List<double[]> generateJunctions(Kirchoff kirchoff) {
+    static List<float[]> generateJunctions(Kirchoff kirchoff) {
         final var lookup = kirchoff.components;
-        final var ret = new ArrayList<double[]>();
+        final var ret = new ArrayList<float[]>();
 
         // One term per component, plus the voltage sum
         final int nTerms = lookup.size() + 1;
         for (var node : kirchoff.nodes) {
             // Add each component to the equation
-            var equation = new double[nTerms];
+            var equation = new float[nTerms];
             for (var c : node.components) {
                 var mtp = lookup.get(c);
                 var forwards = mtp.forwards();

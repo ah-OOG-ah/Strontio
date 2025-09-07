@@ -64,19 +64,19 @@ public class Circuit {
     }
 
     public final class Resistor extends TwoPin {
-        public final double resistance;
+        public final float resistance;
 
         /**
          * @param one        component attached to pin 1
          * @param two        component attached to pin 2
          * @param resistance in ohms
          */
-        Resistor(Node one, Node two, double resistance) {
+        Resistor(Node one, Node two, float resistance) {
             super(one, two);
             this.resistance = resistance;
         }
 
-        Resistor(double resistance) {
+        Resistor(float resistance) {
             this(null, null, resistance);
         }
 
@@ -97,19 +97,19 @@ public class Circuit {
     }
 
     public final class VoltSource extends TwoPin {
-        public final double voltage;
+        public final float voltage;
 
         /**
          * @param low     component attached to the negative side
          * @param high    component attached to the positive side
          * @param voltage voltage difference between sides
          */
-        VoltSource(Node low, Node high, double voltage) {
+        VoltSource(Node low, Node high, float voltage) {
             super(low, high);
             this.voltage = voltage;
         }
 
-        VoltSource(double voltage) {
+        VoltSource(float voltage) {
             this(null, null, voltage);
         }
 
