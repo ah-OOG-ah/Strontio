@@ -25,8 +25,8 @@ import org.openjdk.jmh.annotations.Warmup;
 public class MLBench {
     private static final boolean NARROW = true;
     private final Matrix MATRIX = NARROW
-            ? new Matrix(78, 27)
-            : new Matrix(27, 78);
+            ? new Matrix(173, 53)
+            : new Matrix(53, 173);//*/
     private final Random RANDOM = new Random(1337);
 
     @Setup
