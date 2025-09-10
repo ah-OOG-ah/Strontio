@@ -57,11 +57,9 @@ public class Hand {
         printMatrix(kirchoff);
     }
 
-    /// The goal here is to print out a matrix for solving resistor current.
+    /// The goal here is to print out a matrix with solved currents.
     /// To that end - we first take the loop equations, then fill out the matrix with junction equations.
     private static void printMatrix(Kirchoff k) {
-        LOGGER.info("Matrix(RR, [");
-
         final int terms = k.components.size() + 1;
         final var loops = k.loops;
         var junctions = generateJunctions(k);
@@ -84,20 +82,12 @@ public class Hand {
                     nums[r.idx] = e.forwards() ? r.resistance : -r.resistance;
                 }
             }
-
             nums[terms - 1] = voltage;
-            LOGGER.info("{},", nums);
 
             mat.setRow(ridx++, nums);
         }
 
-        for (var j : junctions) {
-            LOGGER.info("{},", j);
-
-            mat.setRow(ridx++, j);
-        }
-
-        LOGGER.info("]).rref()\n\n");
+        for (var j : junctions) { mat.setRow(ridx++, j); }
 
         MatrixUtils.rref(mat);
 

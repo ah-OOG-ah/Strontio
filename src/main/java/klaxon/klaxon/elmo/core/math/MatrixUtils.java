@@ -1,9 +1,9 @@
 package klaxon.klaxon.elmo.core.math;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public class MatrixUtils {
@@ -65,8 +65,42 @@ public class MatrixUtils {
 
         // Now, back-substitute
         // TODO optimize for pivots == matW case
+        if (pivotCount < matW - 1) {
+            reducePartialPivots(pivotRow, pivotCols, matrix);
+        } else if (pivotCount == matW - 1) {
+            reduceFullPivots(pivotRow, matrix);
+        } else {
+            throw new RuntimeException("Matrix is singular!");
+        }
+
+    }
+
+    private static void reduceFullPivots(int pivotRow, Matrix matrix) {
+        final int lastColIdx = matrix.cols - 1;
+
         while (pivotRow > 0) {
-            pivotCol = pivotCols[pivotRow];
+            final int pivotCol = pivotRow;
+            final var pivot = matrix.get(pivotRow, pivotCol);
+            final var invPivot = 1 / pivot;
+            final var lastCol = matrix.get(pivotRow, lastColIdx) * invPivot;
+
+            // We only need to math the last column, and the pivot col can just get zeroed
+            for (int i = pivotRow - 1; i > -1; --i) {
+                matrix.add(i, lastColIdx, matrix.get(i, pivotCol) * -lastCol);
+                matrix.set(i, pivotCol, 0);
+            }
+
+            // Normalize the row
+            matrix.set(pivotRow, pivotCol, 1);
+            matrix.set(pivotRow, matrix.cols - 1, lastCol);
+
+            pivotRow--;
+        }
+    }
+
+    private static void reducePartialPivots(int pivotRow, int[] pivotCols, Matrix matrix) {
+        while (pivotRow > 0) {
+            final int pivotCol = pivotCols[pivotRow];
             final var pivot = matrix.get(pivotRow, pivotCol);
             final var invPivot = 1 / pivot;
 

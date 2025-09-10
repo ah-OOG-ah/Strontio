@@ -1,7 +1,6 @@
 package klaxon.klaxon.elmo.core.math;
 
 import static java.lang.Math.abs;
-import static java.lang.Math.fma;
 import static java.lang.System.arraycopy;
 import static jdk.incubator.vector.FloatVector.broadcast;
 import static jdk.incubator.vector.FloatVector.fromArray;
@@ -46,6 +45,16 @@ public class Matrix {
         backing[idx(row, col)] = value;
     }
 
+    public void add(int row, int col, float value) {
+        backing[idx(row, col)] += value;
+    }
+
+    /// Multiplies val by factor, then accumulates to matrix(row, col).
+    public void fma(int row, int col, float val, float factor) {
+        final int idx = idx(row, col);
+        backing[idx] = Math.fma(val, factor, backing[idx]);
+    }
+
     public void setRow(int row, float[] values) {
         arraycopy(values, 0, backing, rowIdx(row), cols);
     }
@@ -79,7 +88,7 @@ public class Matrix {
         }
 
         for (i += offset; i < cols; ++i) {
-            backing[idx(row2, i)] = fma(backing[idx(row1, i)], factor, backing[idx(row2, i)]);
+            fma(row2, i, get(row1, i), factor);
         }
     }
 
@@ -102,7 +111,7 @@ public class Matrix {
      */
     public void fmaRowScalar(int row1, int row2, float factor, int offset) {
         for (int i = offset; i < cols; ++i) {
-            backing[idx(row2, i)] = fma(backing[idx(row1, i)], factor, backing[idx(row2, i)]);
+            fma(row2, i, get(row1, i), factor);
         }
     }
 
