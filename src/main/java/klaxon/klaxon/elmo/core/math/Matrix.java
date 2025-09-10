@@ -1,5 +1,6 @@
 package klaxon.klaxon.elmo.core.math;
 
+import static java.lang.Math.abs;
 import static java.lang.Math.fma;
 import static java.lang.System.arraycopy;
 import static jdk.incubator.vector.FloatVector.broadcast;
@@ -15,7 +16,10 @@ public class Matrix {
     public final int cols;
     public final int length;
 
+    private static final float EPSILON = 1e-9f;
     private static final VectorSpecies<Float> SPECIES = FloatVector.SPECIES_PREFERRED;
+    private static final FloatVector VEPSILON = broadcast(SPECIES, EPSILON);
+    private static final FloatVector VZERO = broadcast(SPECIES, 0);
 
     public Matrix(int rows, int cols) {
         this.rows = rows;
@@ -44,6 +48,22 @@ public class Matrix {
 
     public void setRow(int row, float[] values) {
         arraycopy(values, 0, backing, rowIdx(row), cols);
+    }
+
+    /**
+     * Multiplies row by factor. Skips columns before offset
+     */
+    public void mulRowUnmask(int row, float factor, int offset) {
+        final var vfactor = broadcast(SPECIES, factor);
+        int i = 0;
+        for (; i < SPECIES.loopBound(cols - offset); i += SPECIES.length()) {
+            final var idx = idx(row, i + offset);
+            fromArray(SPECIES, backing, idx).mul(vfactor).intoArray(backing, idx);
+        }
+
+        for (i += offset; i < cols; ++i) {
+            backing[idx(row, i)] *= factor;
+        }
     }
 
     /**
@@ -83,6 +103,22 @@ public class Matrix {
     public void fmaRowScalar(int row1, int row2, float factor, int offset) {
         for (int i = offset; i < cols; ++i) {
             backing[idx(row2, i)] = fma(backing[idx(row1, i)], factor, backing[idx(row2, i)]);
+        }
+    }
+
+    /**
+     * Removes any excessively-small values in the matrix (+- {@link Matrix#EPSILON})
+     */
+    public void supernormalize() {
+        int i = 0;
+        for (; i < SPECIES.loopBound(length); i += SPECIES.length()) {
+            final var vec = fromArray(SPECIES, backing, i);
+            final var m = vec.abs().lt(VEPSILON);
+            VZERO.intoArray(backing, i, m);
+        }
+
+        for (; i < length; ++i) {
+            if (abs(backing[i]) < EPSILON) backing[i] = 0;
         }
     }
 

@@ -99,7 +99,7 @@ public class Hand {
 
         LOGGER.info("]).rref()\n\n");
 
-        MatrixUtils.reduceMatrix(mat);
+        MatrixUtils.rref(mat);
 
         LOGGER.info("{}", mat);
     }

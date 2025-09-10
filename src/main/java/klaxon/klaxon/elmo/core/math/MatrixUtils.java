@@ -1,13 +1,20 @@
 package klaxon.klaxon.elmo.core.math;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.min;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class MatrixUtils {
 
-    public static void reduceMatrix(Matrix matrix) {
+    public static void rref(Matrix matrix) {
         final int matW = matrix.cols;
         final int matH = matrix.rows;
         final var scratch = matrix.getScratchRow();
+        // The column of the pivot for each row.
+        final var pivotCols = new int[min(matH, matW)];
+        var pivotCount = -1;
 
         int pivotRow = 0;
         int pivotCol = 0;
@@ -24,9 +31,13 @@ public class MatrixUtils {
                 }
             }
 
+            // No pivot in this column!
             if (pivot == 0.0) {
                 pivotCol++; continue;
             }
+
+            // There *was* a pivot, record it!
+            pivotCols[++pivotCount] = pivotCol;
 
             matrix.swap(newPivotRow, pivotRow, scratch);
 
@@ -45,6 +56,31 @@ public class MatrixUtils {
 
             pivotCol++;
             pivotRow++;
+        }
+
+        pivotRow = pivotCount - 1;
+        Arrays.fill(pivotCols, pivotCount, pivotCols.length, -1);
+
+        matrix.supernormalize();
+
+        // Now, back-substitute
+        // TODO optimize for pivots == matW case
+        while (pivotRow > 0) {
+            pivotCol = pivotCols[pivotRow];
+            final var pivot = matrix.get(pivotRow, pivotCol);
+            final var invPivot = 1 / pivot;
+
+            for (int i = pivotRow - 1; i > -1; --i) {
+                final var factor = matrix.get(i, pivotCol) * invPivot;
+                matrix.fmaRowUnmask(pivotRow, i, -factor, pivotCol + 1);
+                matrix.set(i, pivotCol, 0);
+            }
+
+            // Normalize the row
+            matrix.mulRowUnmask(pivotRow, invPivot, pivotCol);
+
+            matrix.supernormalize();
+            pivotRow--;
         }
     }
 }
