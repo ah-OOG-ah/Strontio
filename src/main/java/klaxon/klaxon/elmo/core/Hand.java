@@ -4,7 +4,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import klaxon.klaxon.elmo.core.math.Matrix;
 import klaxon.klaxon.elmo.core.math.MatrixUtils;
 import org.slf4j.Logger;
@@ -59,7 +58,7 @@ public class Hand {
     private static void printCurrents(Kirchoff k) {
         final int terms = k.components.size() + 1;
         final var loops = k.loops;
-        var junctions = generateJunctions(k);
+        final var junctions = k.generateJunctions();
 
         final var mat = new Matrix(terms, loops.size() + junctions.size());
         var ridx = 0;
@@ -150,31 +149,6 @@ public class Hand {
         }
 
         return new Kirchoff(circuit, components, nodes, loops);
-    }
-
-    static List<float[]> generateJunctions(Kirchoff kirchoff) {
-        final var lookup = kirchoff.components;
-        final var ret = new ArrayList<float[]>();
-
-        // One term per component, plus the voltage sum
-        final int nTerms = lookup.size() + 1;
-        for (var node : kirchoff.nodes) {
-            // Add each component to the equation
-            var equation = new float[nTerms];
-            for (var c : node.components) {
-                var mtp = lookup.get(c);
-                var forwards = mtp.forwards();
-                var startsHere = c.one() == node;
-
-                // If the component is draining current, subtract our current
-                if ((forwards && startsHere) || (!forwards && !startsHere)) equation[c.idx] = -1;
-                else equation[c.idx] = 1; // otherwise, we're dumping current in
-            }
-
-            ret.add(equation);
-        }
-
-        return ret;
     }
 
 }
