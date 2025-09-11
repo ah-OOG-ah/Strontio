@@ -9,6 +9,16 @@ public class Circuit {
     private int nextIdx = 0;
     private final HashMap<Class<? extends TwoPin>, Integer> nextCIdx = new HashMap<>();
     public ArrayList<TwoPin> components = new ArrayList<>();
+    private final String name;
+
+    public Circuit(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 
     public abstract sealed class TwoPin permits Resistor, VoltSource {
         private Node one;
@@ -60,7 +70,6 @@ public class Circuit {
         }
 
         public abstract String name();
-        public abstract String addToEquation();
     }
 
     public final class Resistor extends TwoPin {
@@ -90,10 +99,6 @@ public class Circuit {
             return "R" + cidx;
         }
 
-        @Override
-        public String addToEquation() {
-            return "I" + name() + "*" + resistance;
-        }
     }
 
     public final class VoltSource extends TwoPin {
@@ -120,12 +125,7 @@ public class Circuit {
 
         @Override
         public String name() {
-            return "VoltSource";
-        }
-
-        @Override
-        public String addToEquation() {
-            return voltage + "V";
+            return "V" + cidx;
         }
 
         public Node low() { return one(); }

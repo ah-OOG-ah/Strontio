@@ -15,9 +15,8 @@ public class Matrix {
     public final int cols;
     public final int length;
 
-    private static final float EPSILON = 1e-9f;
     private static final VectorSpecies<Float> SPECIES = FloatVector.SPECIES_PREFERRED;
-    private static final FloatVector VEPSILON = broadcast(SPECIES, EPSILON);
+    private static final FloatVector VEPSILON = broadcast(SPECIES, FloatUtils.EPSILON);
     private static final FloatVector VZERO = broadcast(SPECIES, 0);
 
     public Matrix(int rows, int cols) {
@@ -116,7 +115,7 @@ public class Matrix {
     }
 
     /**
-     * Removes any excessively-small values in the matrix (+- {@link Matrix#EPSILON})
+     * Removes any excessively-small values in the matrix (+- {@link FloatUtils#EPSILON})
      */
     public void supernormalize() {
         int i = 0;
@@ -127,7 +126,7 @@ public class Matrix {
         }
 
         for (; i < length; ++i) {
-            if (abs(backing[i]) < EPSILON) backing[i] = 0;
+            if (abs(backing[i]) < FloatUtils.EPSILON) backing[i] = 0;
         }
     }
 

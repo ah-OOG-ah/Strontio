@@ -24,7 +24,7 @@ public class Hand {
     }
 
     private static Circuit linearCircuit(float voltage) {
-        final var ret = new Circuit();
+        final var ret = new Circuit("Linear, " + voltage + "V");
         final var battery = ret.new VoltSource(voltage);
         final var r1 = ret.new Resistor(battery.high(), null, 468);
         final var r2 = ret.new Resistor(r1.two(), battery.low(), 621);
@@ -37,7 +37,7 @@ public class Hand {
     }
 
     private static Circuit superCircuit() {
-        final var ret = new Circuit();
+        final var ret = new Circuit("Superpositioned");
         final var b1 = ret.new VoltSource(10);
         final var r1 = ret.new Resistor(b1.high(), null, 470);
         final var r2 = ret.new Resistor(r1.two(), b1.low(), 620);
@@ -52,14 +52,13 @@ public class Hand {
 
     private static void printKirchoffs(Circuit v) {
         final var kirchoff = generateLoops(v);
-        LOGGER.info("Printing Kirchhoff equations...");
-
-        printMatrix(kirchoff);
+        LOGGER.info("Printing currents for {}", v);
+        printCurrents(kirchoff);
     }
 
-    /// The goal here is to print out a matrix with solved currents.
+    /// The goal here is to print out a list of components with solved currents.
     /// To that end - we first take the loop equations, then fill out the matrix with junction equations.
-    private static void printMatrix(Kirchoff k) {
+    private static void printCurrents(Kirchoff k) {
         final int terms = k.components.size() + 1;
         final var loops = k.loops;
         var junctions = generateJunctions(k);
@@ -91,7 +90,22 @@ public class Hand {
 
         MatrixUtils.rref(mat);
 
-        LOGGER.info("{}", mat);
+        final var currents = new FloatArrayMap<>(ArrayList.class);
+        for (int i = 0; i < k.components.size(); ++i) {
+            //noinspection unchecked
+            currents.computeIfAbsent(
+                    mat.get(i, mat.cols - 1),
+                        _ -> new ArrayList<Circuit.TwoPin>())
+                    .add(k.c.components.get(i));
+        }
+
+        currents.forEach((current, components) -> {
+            var names = new StringBuilder();
+            //noinspection unchecked
+            ((ArrayList<Circuit.TwoPin>) components).forEach(t -> names.append(t.name()).append(", "));
+            names.delete(names.length() - 2, names.length());
+            LOGGER.info("{}: {}", names, current);
+        });
     }
 
     static Kirchoff generateLoops(Circuit circuit) {
@@ -137,7 +151,7 @@ public class Hand {
             }
         }
 
-        return new Kirchoff(components, nodes, loops);
+        return new Kirchoff(circuit, components, nodes, loops);
     }
 
     static List<float[]> generateJunctions(Kirchoff kirchoff) {
@@ -176,17 +190,19 @@ public class Hand {
             }
         }
 
-        if (ret) LOGGER.info("All components valid!");
+        if (ret) LOGGER.debug("All components valid!");
         else throw new RuntimeException("Validation failure!");
     }
 
     static final class Kirchoff {
+        public final Circuit c;
         private final Map<Circuit.TwoPin, MetaTwoPin> components;
         private final Set<Circuit.Node> nodes;
         private final List<TwoPinLoop> loops;
         public final int resistorCount;
 
-        Kirchoff(Map<Circuit.TwoPin, MetaTwoPin> components, Set<Circuit.Node> nodes, List<TwoPinLoop> loops) {
+        Kirchoff(Circuit c, Map<Circuit.TwoPin, MetaTwoPin> components, Set<Circuit.Node> nodes, List<TwoPinLoop> loops) {
+            this.c = c;
             this.components = components;
             this.nodes = nodes;
             this.loops = loops;
