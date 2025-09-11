@@ -113,7 +113,7 @@ public class Circuit {
 
         @Override
         public String name() {
-            return "R" + cidx;
+            return "R" + (cidx + 1);
         }
 
     }
@@ -142,7 +142,7 @@ public class Circuit {
 
         @Override
         public String name() {
-            return "V" + cidx;
+            return "V" + (cidx + 1);
         }
 
         public Node low() { return one(); }

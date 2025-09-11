@@ -20,6 +20,8 @@ public class Hand {
         printKirchoffs(linearCircuit(10));
         printKirchoffs(linearCircuit(15));
         printKirchoffs(superCircuit());
+
+        printKirchoffs(expandedShort());
     }
 
     private static Circuit linearCircuit(float voltage) {
@@ -44,6 +46,18 @@ public class Hand {
         final var rL = ret.new Resistor(r3.two(), b1.low(), 750);
         final var r5 = ret.new Resistor(b1.low(), null, 1_000);
         final var b2 = ret.new VoltSource(r5.two(), r3.two(), 5);
+        ret.validate();
+
+        return ret;
+    }
+
+    private static Circuit expandedShort() {
+        final var ret = new Circuit("Expanded Short");
+        final var b1 = ret.new VoltSource(10);
+        final var r1 = ret.new Resistor(b1.high(), null, 470);
+        final var r2 = ret.new Resistor(r1.two(), null, 4_700);
+        final var r3 = ret.new Resistor(r1.two(), r2.two(), 2_200);
+        final var r4 = ret.new Resistor(r2.two(), b1.low(), 1_000);
         ret.validate();
 
         return ret;
