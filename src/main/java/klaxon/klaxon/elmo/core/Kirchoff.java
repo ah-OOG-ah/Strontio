@@ -9,7 +9,7 @@ import java.util.Set;
 import klaxon.klaxon.elmo.core.math.Matrix;
 import klaxon.klaxon.elmo.core.math.MatrixUtils;
 
-final class Kirchoff {
+public final class Kirchoff {
     public final Circuit c;
     final Map<Circuit.TwoPin, MetaTwoPin> components;
     final Set<Circuit.Node> nodes;
