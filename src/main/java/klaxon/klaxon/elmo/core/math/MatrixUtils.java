@@ -14,7 +14,7 @@ public class MatrixUtils {
         final var scratch = matrix.getScratchRow();
         // The column of the pivot for each row.
         final var pivotCols = new int[min(matH, matW)];
-        var pivotCount = -1;
+        var pivotCount = 0;
 
         int pivotRow = 0;
         int pivotCol = 0;
@@ -22,7 +22,7 @@ public class MatrixUtils {
         // Shamelessly stolen from wikipedia
         while (pivotRow < matW && pivotCol < matH) {
             // Find the highest value in this column, that'll be the pivot
-            var pivot = 0.0;
+            var pivot = 0f;
             int newPivotRow = pivotRow;
             for (int i = pivotRow; i < matH; ++i) {
                 if (abs(pivot) < abs(matrix.get(i, pivotCol))) {
@@ -32,12 +32,12 @@ public class MatrixUtils {
             }
 
             // No pivot in this column!
-            if (pivot == 0.0) {
+            if (FloatUtils.equals(pivot, 0)) {
                 pivotCol++; continue;
             }
 
             // There *was* a pivot, record it!
-            pivotCols[++pivotCount] = pivotCol;
+            pivotCols[pivotCount++] = pivotCol;
 
             matrix.swap(newPivotRow, pivotRow, scratch);
 
