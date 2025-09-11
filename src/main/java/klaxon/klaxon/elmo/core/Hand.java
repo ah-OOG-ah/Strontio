@@ -1,5 +1,7 @@
 package klaxon.klaxon.elmo.core;
 
+import static klaxon.klaxon.elmo.core.Formatter.fmtUnit;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -101,7 +103,7 @@ public class Hand {
             //noinspection unchecked
             ((ArrayList<Circuit.TwoPin>) components).forEach(t -> names.append(t.name()).append(", "));
             names.delete(names.length() - 2, names.length());
-            LOGGER.info("{}: {}", names, current);
+            LOGGER.info("{}: {}", names, fmtUnit(current, "A"));
         });
     }
 
@@ -150,5 +152,4 @@ public class Hand {
 
         return new Kirchoff(circuit, components, nodes, loops);
     }
-
 }
