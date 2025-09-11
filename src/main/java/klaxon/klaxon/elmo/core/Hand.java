@@ -1,13 +1,9 @@
 package klaxon.klaxon.elmo.core;
 
-import static klaxon.klaxon.elmo.core.Formatter.fmtUnit;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import klaxon.klaxon.elmo.core.math.Matrix;
-import klaxon.klaxon.elmo.core.math.MatrixUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,12 +12,11 @@ public class Hand {
 
     static void main(String[] ignoredArgs) {
         // Generate Kirchhoff loops and print
-        printKirchoffs(linearCircuit(5));
-        printKirchoffs(linearCircuit(10));
-        printKirchoffs(linearCircuit(15));
-        printKirchoffs(superCircuit());
-
-        printKirchoffs(expandedShort());
+        linearCircuit(5).printCurrents();
+        linearCircuit(10).printCurrents();
+        linearCircuit(15).printCurrents();
+        superCircuit().printCurrents();
+        expandedShort().printCurrents();
     }
 
     private static Circuit linearCircuit(float voltage) {
@@ -61,64 +56,6 @@ public class Hand {
         ret.validate();
 
         return ret;
-    }
-
-    private static void printKirchoffs(Circuit v) {
-        final var kirchoff = generateLoops(v);
-        LOGGER.info("Printing currents for {}", v);
-        printCurrents(kirchoff);
-    }
-
-    /// The goal here is to print out a list of components with solved currents.
-    /// To that end - we first take the loop equations, then fill out the matrix with junction equations.
-    private static void printCurrents(Kirchoff k) {
-        final int terms = k.components.size() + 1;
-        final var loops = k.loops;
-        final var junctions = k.generateJunctions();
-
-        final var mat = new Matrix(terms, loops.size() + junctions.size());
-        var ridx = 0;
-
-        for (final var loop : loops) {
-            final var elements = loop.getElements();
-
-            // Set up one row of the matrix
-            final var nums = new float[terms];
-
-            // Find the known voltage around the loop and fill in resistor info
-            var voltage = 0f;
-            for (var e : elements) {
-                if (e.t() instanceof Circuit.VoltSource v) {
-                    voltage += e.forwards() ? v.voltage : -v.voltage;
-                } else if (e.t() instanceof Circuit.Resistor r) {
-                    nums[r.idx] = e.forwards() ? r.resistance : -r.resistance;
-                }
-            }
-            nums[terms - 1] = voltage;
-
-            mat.setRow(ridx++, nums);
-        }
-
-        for (var j : junctions) { mat.setRow(ridx++, j); }
-
-        MatrixUtils.rref(mat);
-
-        final var currents = new FloatArrayMap<>(ArrayList.class);
-        for (int i = 0; i < k.components.size(); ++i) {
-            //noinspection unchecked
-            currents.computeIfAbsent(
-                    mat.get(i, mat.cols - 1),
-                        _ -> new ArrayList<Circuit.TwoPin>())
-                    .add(k.c.components.get(i));
-        }
-
-        currents.forEach((current, components) -> {
-            var names = new StringBuilder();
-            //noinspection unchecked
-            ((ArrayList<Circuit.TwoPin>) components).forEach(t -> names.append(t.name()).append(", "));
-            names.delete(names.length() - 2, names.length());
-            LOGGER.info("{}: {}", names, fmtUnit(current, "A"));
-        });
     }
 
     static Kirchoff generateLoops(Circuit circuit) {

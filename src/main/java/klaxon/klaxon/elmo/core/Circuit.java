@@ -17,6 +17,12 @@ public class Circuit {
         this.name = name;
     }
 
+    public void printCurrents() {
+        final var kirchoff = Hand.generateLoops(this);
+        LOGGER.info("Printing currents for {}", this);
+        kirchoff.printCurrents();
+    }
+
     /// Throws an exception if any component has a null pin
     /// TODO: make this more thorough
     void validate() {
