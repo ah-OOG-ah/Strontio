@@ -29,7 +29,7 @@ public class Hand {
         final var r3 = ret.new Resistor(r1.two(), null, 2_210);
         final var r4 = ret.new Resistor(r3.two(), battery.low(), 749);
         final var r5 = ret.new Resistor(r3.two(), battery.low(), 998);
-        validate(ret);
+        ret.validate();
 
         return ret;
     }
@@ -43,7 +43,7 @@ public class Hand {
         final var rL = ret.new Resistor(r3.two(), b1.low(), 750);
         final var r5 = ret.new Resistor(b1.low(), null, 1_000);
         final var b2 = ret.new VoltSource(r5.two(), r3.two(), 5);
-        validate(ret);
+        ret.validate();
 
         return ret;
     }
@@ -175,21 +175,6 @@ public class Hand {
         }
 
         return ret;
-    }
-
-    /// Throws an exception if any component has a null pin
-    /// TODO: make this more thorough
-    static void validate(Circuit circuit) {
-        var ret = true;
-        for (var c : circuit.components) {
-            if (c.one() == null || c.two() == null) {
-                LOGGER.error("Component validation failed! Component: {}", c);
-                ret = false;
-            }
-        }
-
-        if (ret) LOGGER.debug("All components valid!");
-        else throw new RuntimeException("Validation failure!");
     }
 
 }

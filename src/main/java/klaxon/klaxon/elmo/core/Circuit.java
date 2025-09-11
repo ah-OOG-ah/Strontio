@@ -1,5 +1,7 @@
 package klaxon.klaxon.elmo.core;
 
+import static klaxon.klaxon.elmo.core.Hand.LOGGER;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -13,6 +15,21 @@ public class Circuit {
 
     public Circuit(String name) {
         this.name = name;
+    }
+
+    /// Throws an exception if any component has a null pin
+    /// TODO: make this more thorough
+    void validate() {
+        var ret = true;
+        for (var c : components) {
+            if (c.one() == null || c.two() == null) {
+                LOGGER.error("Component validation failed! Component: {}", c);
+                ret = false;
+            }
+        }
+
+        if (ret) LOGGER.debug("All components valid!");
+        else throw new RuntimeException("Validation failure!");
     }
 
     @Override
