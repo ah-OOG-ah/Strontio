@@ -64,7 +64,7 @@ public class MatrixUtils {
         matrix.supernormalize();
 
         // Now, back-substitute
-        // TODO optimize for pivots == matW case
+        // TODO do something with singular matrices
         if (pivotCount < matW - 1) {
             reducePartialPivots(pivotRow, pivotCols, matrix);
         } else if (pivotCount == matW - 1) {
