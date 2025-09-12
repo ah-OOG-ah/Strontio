@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import klaxon.klaxon.elmo.core.math.Matrix;
-import klaxon.klaxon.elmo.core.math.MatrixUtils;
 
 public class Kirchoff {
     public final Circuit c;
@@ -61,7 +60,7 @@ public class Kirchoff {
 
         for (var j : junctions) { mat.setRow(ridx++, j); }
 
-        MatrixUtils.rref(mat);
+        mat.rref();
 
         final var currents = new FloatArrayMap<>(ArrayList.class);
         for (int i = 0; i < components.size(); ++i) {
