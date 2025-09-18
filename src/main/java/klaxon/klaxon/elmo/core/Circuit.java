@@ -65,6 +65,10 @@ public class Circuit {
         return new Kirchoff(this, components, nodes, loops);
     }
 
+    public void p() {
+        LOGGER.info(generateLoops().p());
+    }
+
     public void printCurrents() {
         final var kirchoff = generateLoops();
         LOGGER.info("Printing currents for {}", this);

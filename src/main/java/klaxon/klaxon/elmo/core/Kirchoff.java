@@ -28,6 +28,39 @@ public class Kirchoff {
         resistorCount = rc;
     }
 
+    public String p() {
+
+        final int terms = components.size() + 1;
+        final var loops = this.loops;
+        final var junctions = generateJunctions();
+
+        final var mat = new Matrix(terms, loops.size() + junctions.size());
+        var ridx = 0;
+
+        for (final var loop : loops) {
+            final var elements = loop.getElements();
+
+            // Set up one row of the matrix
+            final var nums = new float[terms];
+
+            // Find the known voltage around the loop and fill in resistor info
+            var voltage = 0f;
+            for (var e : elements) {
+                if (e.t() instanceof Circuit.VoltSource v) {
+                    voltage += e.forwards() ? v.voltage : -v.voltage;
+                } else if (e.t() instanceof Circuit.Resistor r) {
+                    nums[r.idx] = e.forwards() ? r.resistance : -r.resistance;
+                }
+            }
+            nums[terms - 1] = voltage;
+
+            mat.setRow(ridx++, nums);
+        }
+
+        for (var j : junctions) { mat.setRow(ridx++, j); }
+        return mat.toString();
+    }
+
     /// The goal here is to print out a list of components with solved currents.
     /// To that end - we first take the loop equations, then fill out the matrix with junction equations.
     public void printCurrents() {
