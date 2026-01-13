@@ -15,6 +15,8 @@ dependencies {
     implementation("org.jetbrains:annotations:26.0.2")
     implementation("org.ejml:ejml-all:0.44.0")
 
+    implementation("it.unimi.dsi:fastutil:8.5.16")
+
     // Elmo deps
     implementation("com.formdev:flatlaf:3.6")
     implementation("com.formdev:flatlaf-extras:3.6")
@@ -32,7 +34,7 @@ dependencies {
 val vectorArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.vector")
 
 application {
-    mainClass = "klaxon.klaxon.elmo.core.Hand"
+    mainClass = "klaxon.klaxon.horror.Horror"
     applicationDefaultJvmArgs += vectorArgs
 }
 
