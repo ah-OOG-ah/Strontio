@@ -1,6 +1,7 @@
 package klaxon.klaxon.horror;
 
 import klaxon.klaxon.horror.ast.Tree;
+import klaxon.klaxon.horror.parse.Stringerator;
 
 public class Horror {
     static void main(String[] args) {

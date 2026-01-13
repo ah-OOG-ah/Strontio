@@ -1,15 +1,16 @@
 package klaxon.klaxon.horror.ast;
 
-import static klaxon.klaxon.horror.Stringerator.IS_ASCII_DIGIT;
+import static klaxon.klaxon.horror.parse.Ascii.IS_ASCII_DIGIT;
+import static klaxon.klaxon.horror.parse.Ascii.toDigit;
 
-import java.util.Spliterator;
-import klaxon.klaxon.horror.Stringerator;
+import klaxon.klaxon.horror.parse.BBuf;
+import klaxon.klaxon.horror.parse.Stringerator;
 
 /// An AST node representing a number
 public record Integer(int value) implements Node {
 
-    public static Integer parse(Stringerator theRest, Tree.BBuf buf) {
-        while (theRest.peekNext(IS_ASCII_DIGIT)) buf.push(theRest.next());
+    public static Integer parse(Stringerator theRest, BBuf buf) {
+        while (theRest.peekNext(IS_ASCII_DIGIT)) buf.push(toDigit(theRest.next()));
         return new Integer(buf.dumpAsInt());
     }
 }

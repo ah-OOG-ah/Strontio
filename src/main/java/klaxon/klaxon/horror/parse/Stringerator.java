@@ -1,4 +1,4 @@
-package klaxon.klaxon.horror;
+package klaxon.klaxon.horror.parse;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
@@ -8,8 +8,6 @@ import java.util.Iterator;
 public class Stringerator implements Iterator<Byte> {
     private final byte[] src;
     private int index = 0;
-
-    public static final BytePredicate IS_ASCII_DIGIT = b -> b >= 48 && b <= 57;
 
     public Stringerator(String src) {
         this.src = src.getBytes(US_ASCII);
@@ -21,7 +19,7 @@ public class Stringerator implements Iterator<Byte> {
 
     /// @return True if the next byte exists and matches the predicate
     public boolean peekNext(BytePredicate condition) {
-        return hasNext() && condition.test(src[index + 1]);
+        return hasNext() && condition.test(src[index]);
     }
 
     @Override
