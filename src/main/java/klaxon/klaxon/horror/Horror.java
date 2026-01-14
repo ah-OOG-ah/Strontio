@@ -29,12 +29,20 @@ public class Horror {
     static void main(String[] args) {
 
         // Load input equation and variables
-        final var varPath = args.length < 1 ? "./inputs.csv" : args[0];
-        final var varOpt = readString(Path.of(varPath), false);
-        if (varOpt.isEmpty()) { LOGGER.error("Failed to read variables from {}!", varPath); return; }
+        if (args.length == 0) args = new String[]{"./inputs.csv"};
+        for (var arg : args) parseEquationFile(arg);
+    }
+
+    private static void parseEquationFile(String eqFilePath) {
+        final var varOpt = readString(Path.of(eqFilePath), false);
+        if (varOpt.isEmpty()) { LOGGER.error("Failed to read variables from {}!", eqFilePath);
+            return;
+        }
 
         final var varFile = varOpt.get().lines().filter(s -> !s.isBlank()).toList();
-        if (varFile.size() < 2) { LOGGER.error("Missing data in input file!"); return; }
+        if (varFile.size() < 2) { LOGGER.error("Missing data in input file!");
+            return;
+        }
         if (varFile.size() > 2) { LOGGER.warn("Line count mismatch in variable file... should only need two"); }
 
         final var headers = varFile.getFirst().split(",");
@@ -118,7 +126,7 @@ public class Horror {
         final var combinedTex = makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, makeTex(EVAL.eval(thrid)));
         TeXHelper.writeTex(
                 unescapeSymbol(combinedTex),
-                outDir.resolve(varPath.replaceFirst(".csv", ".tex")),
+                outDir.resolve(eqFilePath.replaceFirst(".csv", ".tex")),
                 false);
     }
 
