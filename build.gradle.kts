@@ -15,7 +15,7 @@ dependencies {
     implementation("org.jetbrains:annotations:26.0.2")
     implementation("org.ejml:ejml-all:0.44.0")
 
-    implementation("it.unimi.dsi:fastutil:8.5.16")
+    implementation("org.matheclipse:matheclipse-core:3.0.0")
 
     // Elmo deps
     implementation("com.formdev:flatlaf:3.6")
@@ -36,6 +36,10 @@ val vectorArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.vect
 application {
     mainClass = "klaxon.klaxon.horror.Horror"
     applicationDefaultJvmArgs += vectorArgs
+}
+
+tasks.run {
+    workingDir = file("run")
 }
 
 java {

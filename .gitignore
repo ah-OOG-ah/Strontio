@@ -44,3 +44,4 @@ bin/
 
 # Remove ALL idea files
 .idea
+run/
