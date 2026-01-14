@@ -2,6 +2,7 @@ package klaxon.klaxon.horror;
 
 import static java.util.Arrays.asList;
 import static klaxon.klaxon.horror.Files.readString;
+import static klaxon.klaxon.horror.TeXHelper.appendTex;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.HashSet;
 import org.matheclipse.core.eval.ExprEvaluator;
 import org.matheclipse.core.expression.F;
 import org.matheclipse.core.form.tex.TeXFormFactory;
+import org.matheclipse.core.interfaces.IExpr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +32,11 @@ public class Horror {
 
         final var headers = varFile.getFirst().split(",");
         final var values = varFile.get(1).split(",");
-        final var equationString = values[0];
-        final var varNames = Arrays.copyOfRange(headers, 1, headers.length);
-        final var varVals = Arrays.copyOfRange(values, 1, values.length);
+        final var varNames = Arrays.copyOfRange(headers, 2, headers.length);
+
+        final var resultString = values[0];
+        final var equationString = values[1];
+        final var varVals = Arrays.copyOfRange(values, 2, values.length);
 
         if (varVals.length < varNames.length) {
             LOGGER.error("Not enough values! Expected {} values, found {}.", varNames.length, varVals.length);
@@ -43,44 +47,65 @@ public class Horror {
 
         // Start parsing things
         final var evaluator = new ExprEvaluator();
-        final var javaFunc = evaluator.eval(equationString);
-        LOGGER.info("Evaluating: {}", javaFunc);
+        final var equation = evaluator.eval(equationString);
+        LOGGER.info("Evaluating: {}", equation);
         LOGGER.info("Using variables: {}", Arrays.toString(varNames));
 
         // Load variable-error pairs
+        final var result = evaluator.defineVariable(resultString);
+        final var resultError = evaluator.defineVariable("\\delta " + resultString);
         final var symbols = new HashSet<>(asList(varNames));
-        final var variables = new ArrayList<String>();
-        final var constants = new ArrayList<String>();
+        final var variables = new ArrayList<IExpr>();
+        final var errors = new ArrayList<IExpr>();
+        final var constants = new ArrayList<IExpr>();
 
         for (var sym : varNames) {
             switch (sym) {
                 case null -> {} // ??? but handle anyway
-                case String s when s.startsWith("δ") -> {} // error, skip it
-                case String _ when symbols.contains("δ" + sym) -> variables.add(sym); // variable
-                default -> constants.add(sym); // must be a constant then, it has no error
+                case String s when s.startsWith("\\delta ") -> {} // error, skip it
+                case String _ when symbols.contains("\\delta " + sym) -> {
+                    variables.add(evaluator.defineVariable(sym)); // variable
+                    // we add the corresponding error here, to ensure the lists share indices
+                    errors.add(evaluator.defineVariable("\\delta " + sym));
+                }
+                default -> constants.add(evaluator.defineVariable(sym)); // must be a constant then, it has no error
             }
         }
 
         // Line 1: spit out the error preparation
         // Generate the expressions!
-        final var sumOfSquares = variables.stream().map(var -> {
-            var symbol = evaluator.defineVariable(var);
-            var errorSymbol = evaluator.defineVariable("δ" + var);
-            var partialDeriv = F.D(javaFunc, symbol);
-            return F.Sqr(F.Times(errorSymbol, partialDeriv));
-        }).reduce(F::Plus).orElseThrow();
+        IExpr sumExpr = null;
+        for (int i = 0; i < variables.size(); ++i) {
+            var sym = variables.get(i);
+            var errSym = errors.get(i);
+            var partialDeriv = F.Sqr(F.Times(errSym, F.D(result, sym)));
+            sumExpr = sumExpr == null ? partialDeriv : F.Plus(sumExpr, partialDeriv);
+        }
+        final var sumOfSquaresSimple = sumExpr;
 
-        final var quadrature = F.Sqrt(sumOfSquares);
+        // And evaluate the partials
+        sumExpr = null;
+        for (int i = 0; i < variables.size(); ++i) {
+            var sym = variables.get(i);
+            var errSym = errors.get(i);
+            var partialDeriv = F.Sqr(F.Times(errSym, evaluator.eval(F.D(equation, sym))));
+            sumExpr = sumExpr == null ? partialDeriv : F.Plus(sumExpr, partialDeriv);
+        }
+        final var sumOfSquaresEquations = sumExpr;
 
-        LOGGER.info("First line: {}", quadrature);
-        LOGGER.info("Second line: {}", evaluator.eval(quadrature));
+        final var frist = F.Set(resultError, F.Sqrt(sumOfSquaresSimple));
+        final var snecod = F.Sqrt(sumOfSquaresEquations);
+
+        LOGGER.info("First line: {}", frist);
+        LOGGER.info("Second line: {}", snecod);
 
         // Third line fills in variables
-        evaluator.clearVariables();
-
         final var latexFactory = new TeXFormFactory();
-        final var buffer = new StringBuilder();
-        latexFactory.convert(buffer, quadrature);
-        TeXHelper.writeTex(buffer.toString(), varPath.replaceFirst(".csv", ".tex"), false);
+        var buffer = new StringBuilder();
+        latexFactory.convert(buffer, frist);
+        final var tex1 = buffer.toString(); buffer = new StringBuilder();
+        latexFactory.convert(buffer, snecod);
+        final var tex2 = buffer.toString();
+        TeXHelper.writeTex(appendTex(tex1, tex2), varPath.replaceFirst(".csv", ".tex"), false);
     }
 }
