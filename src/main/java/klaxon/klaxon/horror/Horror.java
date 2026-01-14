@@ -3,11 +3,9 @@ package klaxon.klaxon.horror;
 import static java.lang.Double.parseDouble;
 import static java.util.Arrays.asList;
 import static klaxon.klaxon.horror.Files.readString;
-import static klaxon.klaxon.horror.TeXHelper.appendTexs;
 import static klaxon.klaxon.horror.TeXHelper.makeSplitEq;
 import static klaxon.klaxon.horror.TeXHelper.makeTex;
 import static org.matheclipse.core.expression.F.NIL;
-import static org.matheclipse.core.expression.S.File;
 
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import java.io.IOException;
@@ -24,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class Horror {
     private static final Logger LOGGER = LoggerFactory.getLogger("Horror");
+    private static final ExprEvaluator EVAL = new ExprEvaluator();
 
     static void main(String[] args) {
 
@@ -38,78 +37,54 @@ public class Horror {
 
         final var headers = varFile.getFirst().split(",");
         final var values = varFile.get(1).split(",");
-        final var varNames = Arrays.copyOfRange(headers, 2, headers.length);
+        final var rawVariableNames = Arrays.copyOfRange(headers, 2, headers.length);
 
         final var resultString = values[0];
         var equationString = values[1];
-        final var varVals = Arrays.copyOfRange(values, 2, values.length);
+        final var rawValues = Arrays.copyOfRange(values, 2, values.length);
 
-        if (varVals.length < varNames.length) {
-            LOGGER.error("Not enough values! Expected {} values, found {}.", varNames.length, varVals.length);
+        if (rawValues.length < rawVariableNames.length) {
+            LOGGER.error("Not enough values! Expected {} values, found {}.", rawVariableNames.length, rawValues.length);
             return;
-        } else if (varVals.length > varNames.length) {
-            LOGGER.warn("Too many values! Expected {} values, found {}.", varNames.length, varVals.length);
+        } else if (rawValues.length > rawVariableNames.length) {
+            LOGGER.warn("Too many values! Expected {} values, found {}.", rawVariableNames.length, rawValues.length);
         }
 
-        // Start parsing things
-        final var evaluator = new ExprEvaluator();
-
         // Load variable-error pairs
-        final var result = evaluator.defineVariable(resultString);
-        final var resultError = evaluator.defineVariable("\\delta " + resultString);
+        final var result = EVAL.defineVariable(resultString);
+        final var resultError = EVAL.defineVariable("\\delta " + resultString);
         final var mappings = new Object2DoubleArrayMap<ISymbol>();
-        final var symbols = new HashSet<>(asList(varNames));
+        final var symbols = new HashSet<>(asList(rawVariableNames));
         final var variables = new ArrayList<ISymbol>();
         final var errors = new ArrayList<ISymbol>();
         final var constants = new ArrayList<ISymbol>();
 
-        // We assume variables and errors appear in the same order
-        for (int i = 0; i < varNames.length; ++i) {
-            final var value = varVals[i];
-            switch (varNames[i]) {
-                case null -> {} // ??? but handle anyway
-                case String sym when sym.startsWith("\\delta ") -> { // error
-                    var err = evaluator.defineVariable(sym);
-                    errors.add(err);
-                    mappings.put(err, parseDouble(value));
-                }
-                case String sym when symbols.contains("\\delta " + sym) -> { // variable
-                    var var = evaluator.defineVariable(sym);
-                    variables.add(var);
-                    mappings.put(var, parseDouble(value));
-                }
-                case String sym -> { // must be a constant then, it has no error
-                    var conzt = evaluator.defineVariable(sym);
-                    constants.add(conzt);
-                    mappings.put(conzt, parseDouble(value));
-                }
-            }
-        }
+        loadVariables(rawVariableNames, rawValues, errors, mappings, symbols, variables, constants);
 
         // symja doesn't properly handle variables with underscores in the name
         // We replace them with `uuu`
-        evaluator.clearVariables();
+        EVAL.clearVariables();
         for (int i = 0; i < variables.size(); ++i) {
             var sym = variables.get(i);
             var symStr = sym.toString();
             var err = errors.get(i);
 
             if (!symStr.contains("_")) {
-                evaluator.defineVariable(sym);
-                evaluator.defineVariable(err);
+                EVAL.defineVariable(sym);
+                EVAL.defineVariable(err);
                 continue;
             }
 
             var newSym = symStr.replace("_", "uuu");
             equationString = equationString.replaceAll(symStr, newSym);
-            var inewSym = evaluator.defineVariable(newSym);
+            var inewSym = EVAL.defineVariable(newSym);
             variables.set(i, inewSym);
             mappings.put(inewSym, mappings.removeDouble(sym));
 
             var errStr = err.toString();
             var newErr = errStr.replace("_", "uuu");
             equationString = equationString.replaceAll(errStr, newErr);
-            var inewErr = evaluator.defineVariable(newErr);
+            var inewErr = EVAL.defineVariable(newErr);
             errors.set(i, inewErr);
             mappings.put(inewErr, mappings.removeDouble(err));
         }
@@ -118,18 +93,18 @@ public class Horror {
             var symStr = sym.toString();
 
             if (!symStr.contains("_")) {
-                evaluator.defineVariable(sym);
+                EVAL.defineVariable(sym);
                 continue;
             }
 
             var newSym = symStr.replace("_", "uuu");
             equationString = equationString.replaceAll(symStr, newSym);
-            var inewSym = evaluator.defineVariable(newSym);
+            var inewSym = EVAL.defineVariable(newSym);
             constants.set(i, inewSym);
             mappings.put(inewSym, mappings.removeDouble(sym));
         }
 
-        final var equation = evaluator.eval(equationString);
+        final var equation = EVAL.eval(equationString);
         LOGGER.info("Evaluating: {}", equation);
         LOGGER.info("Using variables: {}", variables);
         LOGGER.info("Using errors: {}", errors);
@@ -151,7 +126,7 @@ public class Horror {
         for (int i = 0; i < variables.size(); ++i) {
             var sym = variables.get(i);
             var errSym = errors.get(i);
-            var partialDeriv = F.Sqr(F.Times(errSym, evaluator.eval(F.D(equation, sym))));
+            var partialDeriv = F.Sqr(F.Times(errSym, EVAL.eval(F.D(equation, sym))));
             sumExpr = sumExpr == null ? partialDeriv : F.Plus(sumExpr, partialDeriv);
         }
         final var sumOfSquaresEquations = sumExpr;
@@ -181,8 +156,33 @@ public class Horror {
         var outDir = Path.of("./out");
         try { java.nio.file.Files.createDirectories(outDir); } catch (IOException e) { throw new RuntimeException(e); }
         TeXHelper.writeTex(
-                makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, makeTex(evaluator.eval(thrid))),
+                makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, makeTex(EVAL.eval(thrid))),
                 outDir.resolve(varPath.replaceFirst(".csv", ".tex")),
                 false);
+    }
+
+    private static void loadVariables(String[] varNames, String[] varVals, ArrayList<ISymbol> errors, Object2DoubleArrayMap<ISymbol> mappings, HashSet<String> symbols, ArrayList<ISymbol> variables, ArrayList<ISymbol> constants) {
+        // We assume variables and errors appear in the same order
+        for (int i = 0; i < varNames.length; ++i) {
+            final var value = varVals[i];
+            switch (varNames[i]) {
+                case null -> {} // ??? but handle anyway
+                case String sym when sym.startsWith("\\delta ") -> { // error
+                    var err = EVAL.defineVariable(sym);
+                    errors.add(err);
+                    mappings.put(err, parseDouble(value));
+                }
+                case String sym when symbols.contains("\\delta " + sym) -> { // variable
+                    var var = EVAL.defineVariable(sym);
+                    variables.add(var);
+                    mappings.put(var, parseDouble(value));
+                }
+                case String sym -> { // must be a constant then, it has no error
+                    var conzt = EVAL.defineVariable(sym);
+                    constants.add(conzt);
+                    mappings.put(conzt, parseDouble(value));
+                }
+            }
+        }
     }
 }
