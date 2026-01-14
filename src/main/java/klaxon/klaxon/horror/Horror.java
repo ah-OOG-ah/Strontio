@@ -94,14 +94,7 @@ public class Horror {
         final var frist = F.Sqrt(sumOfSquaresSimple);
         final var snecod = F.Sqrt(sumOfSquaresEquations);
 
-        LOGGER.info("First line: {}", frist);
-        LOGGER.info("Second line: {}", snecod);
-
-        // Convert to LaTeX
-        final var tex1 = makeTex(frist);
-        final var tex2 = makeTex(snecod);
-
-        // Now substitute variables
+        // Third line has variables subbed in
         IExpr thrid = snecod.copy();
         var i = mappings.object2DoubleEntrySet().fastIterator();
         while (i.hasNext()) {
@@ -111,6 +104,13 @@ public class Horror {
                 thrid = r;
             }
         }
+
+        LOGGER.info("First line: {}", frist);
+        LOGGER.info("Second line: {}", snecod);
+
+        // Convert to LaTeX
+        final var tex1 = makeTex(frist);
+        final var tex2 = makeTex(snecod);
         final var tex3 = makeTex(thrid);
 
         var outDir = Path.of("./out");
