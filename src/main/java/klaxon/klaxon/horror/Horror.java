@@ -34,6 +34,8 @@ public class Horror {
     }
 
     private static void parseEquationFile(String eqFilePath) {
+        EVAL.clearVariables();
+
         final var varOpt = readString(Path.of(eqFilePath), false);
         if (varOpt.isEmpty()) { LOGGER.error("Failed to read variables from {}!", eqFilePath);
             return;
