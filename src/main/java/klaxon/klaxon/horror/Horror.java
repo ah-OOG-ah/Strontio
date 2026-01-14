@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 import org.matheclipse.core.eval.ExprEvaluator;
 import org.matheclipse.core.expression.F;
 import org.matheclipse.core.interfaces.IExpr;
@@ -50,15 +52,15 @@ public class Horror {
             LOGGER.warn("Too many values! Expected {} values, found {}.", rawVariableNames.length, rawValues.length);
         }
 
+        // symja doesn't handle some characters properly, we gotta fix that
+        equationString = escapeSymbols(equationString, rawVariableNames);
+
         // Load variable-error pairs
         final var mappings = new Object2DoubleArrayMap<ISymbol>();
         final var variables = new ArrayList<ISymbol>();
         final var errors = new ArrayList<ISymbol>();
         final var constants = new ArrayList<ISymbol>();
         loadVariables(rawVariableNames, rawValues, errors, mappings, variables, constants);
-
-        // symja doesn't handle some characters properly, we gotta fix that
-        equationString = escapeSymbols(equationString, mappings, variables, errors, constants);
 
         final var result = EVAL.defineVariable(resultString);
         final var resultError = EVAL.defineVariable("\\delta " + resultString);
@@ -113,41 +115,59 @@ public class Horror {
 
         var outDir = Path.of("./out");
         try { java.nio.file.Files.createDirectories(outDir); } catch (IOException e) { throw new RuntimeException(e); }
+        final var combinedTex = makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, makeTex(EVAL.eval(thrid)));
         TeXHelper.writeTex(
-                makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, makeTex(EVAL.eval(thrid))),
+                unescapeSymbol(combinedTex),
                 outDir.resolve(varPath.replaceFirst(".csv", ".tex")),
                 false);
     }
 
     /// symja doesn't properly handle several characters I want to use. This converts them into characters I *don't*
     /// want to use, but symja is fine with.
-    /// - `_` -> `@`
-    /// - `capital letters` -> `@lowercase letters@`
-    private static String escapeSymbols(String equationString, Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> variables, ArrayList<ISymbol> errors, ArrayList<ISymbol> constants) {
-        EVAL.clearVariables();
-        equationString = escapeSymbolList(equationString, mappings, variables);
-        equationString = escapeSymbolList(equationString, mappings, errors);
-        equationString = escapeSymbolList(equationString, mappings, constants);
-        return equationString;
+    /// - `_` -> `uuu`
+    /// - `capital letters` -> `zzlowercase letterszz`
+    private static String escapeSymbols(String equationString, String[] varNames) {
+        for (int i = 0; i < varNames.length; ++i) {
+            varNames[i] = escapeSymbol(varNames[i]);
+        }
+        return escapeSymbol(equationString);
     }
 
-    private static String escapeSymbolList(String equationString, Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> symbols) {
-        for (int i = 0; i < symbols.size(); ++i) {
-            var sym = symbols.get(i);
-            var symStr = sym.toString();
-
-            if (!symStr.contains("_")) {
-                EVAL.defineVariable(sym);
-                continue;
+    private static final ArrayList<Function<String, String>> ESCAPES_FWD = new ArrayList<>();
+    private static final ArrayList<Function<String, String>> ESCAPES_BCKWD = new ArrayList<>();
+    static {
+        ESCAPES_FWD.add(s -> s.replaceAll("([A-Z]+)", "zz$1zz").toLowerCase());
+        final var pattern = Pattern.compile("zz([a-z]+)zz");
+        ESCAPES_BCKWD.add(s -> {
+            var m = pattern.matcher(s);
+            var sb = new StringBuilder(s.length());
+            while (m.find()) {
+                m.appendReplacement(sb, m.group(1).toUpperCase());
             }
+            m.appendTail(sb);
+            return sb.toString();
+        });
+        // needs to be second, to avoid ruining the first one on reverse
+        ESCAPES_FWD.add(s -> s.replaceAll("_", "uuu"));
+        ESCAPES_BCKWD.add(s -> s.replaceAll("uuu", "_"));
+    }
 
-            var newSym = symStr.replace("_", "uuu");
-            equationString = equationString.replaceAll(symStr, newSym);
-            var inewSym = EVAL.defineVariable(newSym);
-            symbols.set(i, inewSym);
-            mappings.put(inewSym, mappings.removeDouble(sym));
+    /// See [#escapeSymbols] for the list of escaped symbols
+    private static String escapeSymbol(String sym) {
+        var ret = sym;
+        for (var escaper : ESCAPES_FWD) {
+            ret = escaper.apply(ret);
         }
-        return equationString;
+        return ret;
+    }
+
+    /// See [#escapeSymbols] for the list of escaped symbols
+    private static String unescapeSymbol(String sym) {
+        var ret = sym;
+        for (var unescaper : ESCAPES_BCKWD) {
+            ret = unescaper.apply(ret);
+        }
+        return ret;
     }
 
     private static void loadVariables(String[] varNames, String[] varVals, ArrayList<ISymbol> errors, Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> variables, ArrayList<ISymbol> constants) {
