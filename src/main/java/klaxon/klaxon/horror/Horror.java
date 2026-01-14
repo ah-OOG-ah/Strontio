@@ -119,36 +119,21 @@ public class Horror {
                 false);
     }
 
+    /// symja doesn't properly handle several characters I want to use. This converts them into characters I *don't*
+    /// want to use, but symja is fine with.
+    /// - `_` -> `@`
+    /// - `capital letters` -> `@lowercase letters@`
     private static String escapeSymbols(String equationString, Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> variables, ArrayList<ISymbol> errors, ArrayList<ISymbol> constants) {
-        // symja doesn't properly handle variables with underscores in the name
-        // We replace them with `uuu`
         EVAL.clearVariables();
-        for (int i = 0; i < variables.size(); ++i) {
-            var sym = variables.get(i);
-            var symStr = sym.toString();
-            var err = errors.get(i);
+        equationString = escapeSymbolList(equationString, mappings, variables);
+        equationString = escapeSymbolList(equationString, mappings, errors);
+        equationString = escapeSymbolList(equationString, mappings, constants);
+        return equationString;
+    }
 
-            if (!symStr.contains("_")) {
-                EVAL.defineVariable(sym);
-                EVAL.defineVariable(err);
-                continue;
-            }
-
-            var newSym = symStr.replace("_", "uuu");
-            equationString = equationString.replaceAll(symStr, newSym);
-            var inewSym = EVAL.defineVariable(newSym);
-            variables.set(i, inewSym);
-            mappings.put(inewSym, mappings.removeDouble(sym));
-
-            var errStr = err.toString();
-            var newErr = errStr.replace("_", "uuu");
-            equationString = equationString.replaceAll(errStr, newErr);
-            var inewErr = EVAL.defineVariable(newErr);
-            errors.set(i, inewErr);
-            mappings.put(inewErr, mappings.removeDouble(err));
-        }
-        for (int i = 0; i < constants.size(); ++i) {
-            var sym = constants.get(i);
+    private static String escapeSymbolList(String equationString, Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> symbols) {
+        for (int i = 0; i < symbols.size(); ++i) {
+            var sym = symbols.get(i);
             var symStr = sym.toString();
 
             if (!symStr.contains("_")) {
@@ -159,7 +144,7 @@ public class Horror {
             var newSym = symStr.replace("_", "uuu");
             equationString = equationString.replaceAll(symStr, newSym);
             var inewSym = EVAL.defineVariable(newSym);
-            constants.set(i, inewSym);
+            symbols.set(i, inewSym);
             mappings.put(inewSym, mappings.removeDouble(sym));
         }
         return equationString;
