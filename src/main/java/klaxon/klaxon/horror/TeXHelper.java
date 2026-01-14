@@ -13,9 +13,16 @@ import org.matheclipse.core.form.tex.TeXFormFactory;
 import org.matheclipse.core.interfaces.IExpr;
 
 public class TeXHelper {
-    private static final String PREAMBLE =
-            "\\documentclass[17pt, letterpaper]{extarticle}\\usepackage{amsopn}\\begin{document}\\[\n\n";
-    private static final String POSTSCRIPT = "\n\n\\]\\end{document}";
+    private static final String PREAMBLE = """
+            \\documentclass[10pt, letterpaper]{extarticle}
+            
+            \\usepackage{amsopn}
+            \\usepackage{amsmath}
+            
+            \\begin{document}
+            
+            """;
+    private static final String POSTSCRIPT = "\n\\end{document}";
     private static final TeXFormFactory FACTORY = new TeXFormFactory();
 
     /// Given a LaTeX string, adds another line of LaTeX below it
