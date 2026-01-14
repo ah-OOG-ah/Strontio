@@ -55,51 +55,10 @@ public class Horror {
         final var variables = new ArrayList<ISymbol>();
         final var errors = new ArrayList<ISymbol>();
         final var constants = new ArrayList<ISymbol>();
-
         loadVariables(rawVariableNames, rawValues, errors, mappings, variables, constants);
 
-        // symja doesn't properly handle variables with underscores in the name
-        // We replace them with `uuu`
-        EVAL.clearVariables();
-        for (int i = 0; i < variables.size(); ++i) {
-            var sym = variables.get(i);
-            var symStr = sym.toString();
-            var err = errors.get(i);
-
-            if (!symStr.contains("_")) {
-                EVAL.defineVariable(sym);
-                EVAL.defineVariable(err);
-                continue;
-            }
-
-            var newSym = symStr.replace("_", "uuu");
-            equationString = equationString.replaceAll(symStr, newSym);
-            var inewSym = EVAL.defineVariable(newSym);
-            variables.set(i, inewSym);
-            mappings.put(inewSym, mappings.removeDouble(sym));
-
-            var errStr = err.toString();
-            var newErr = errStr.replace("_", "uuu");
-            equationString = equationString.replaceAll(errStr, newErr);
-            var inewErr = EVAL.defineVariable(newErr);
-            errors.set(i, inewErr);
-            mappings.put(inewErr, mappings.removeDouble(err));
-        }
-        for (int i = 0; i < constants.size(); ++i) {
-            var sym = constants.get(i);
-            var symStr = sym.toString();
-
-            if (!symStr.contains("_")) {
-                EVAL.defineVariable(sym);
-                continue;
-            }
-
-            var newSym = symStr.replace("_", "uuu");
-            equationString = equationString.replaceAll(symStr, newSym);
-            var inewSym = EVAL.defineVariable(newSym);
-            constants.set(i, inewSym);
-            mappings.put(inewSym, mappings.removeDouble(sym));
-        }
+        // symja doesn't handle some characters properly, we gotta fix that
+        equationString = escapeSymbols(equationString, mappings, variables, errors, constants);
 
         final var result = EVAL.defineVariable(resultString);
         final var resultError = EVAL.defineVariable("\\delta " + resultString);
@@ -158,6 +117,52 @@ public class Horror {
                 makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, makeTex(EVAL.eval(thrid))),
                 outDir.resolve(varPath.replaceFirst(".csv", ".tex")),
                 false);
+    }
+
+    private static String escapeSymbols(String equationString, Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> variables, ArrayList<ISymbol> errors, ArrayList<ISymbol> constants) {
+        // symja doesn't properly handle variables with underscores in the name
+        // We replace them with `uuu`
+        EVAL.clearVariables();
+        for (int i = 0; i < variables.size(); ++i) {
+            var sym = variables.get(i);
+            var symStr = sym.toString();
+            var err = errors.get(i);
+
+            if (!symStr.contains("_")) {
+                EVAL.defineVariable(sym);
+                EVAL.defineVariable(err);
+                continue;
+            }
+
+            var newSym = symStr.replace("_", "uuu");
+            equationString = equationString.replaceAll(symStr, newSym);
+            var inewSym = EVAL.defineVariable(newSym);
+            variables.set(i, inewSym);
+            mappings.put(inewSym, mappings.removeDouble(sym));
+
+            var errStr = err.toString();
+            var newErr = errStr.replace("_", "uuu");
+            equationString = equationString.replaceAll(errStr, newErr);
+            var inewErr = EVAL.defineVariable(newErr);
+            errors.set(i, inewErr);
+            mappings.put(inewErr, mappings.removeDouble(err));
+        }
+        for (int i = 0; i < constants.size(); ++i) {
+            var sym = constants.get(i);
+            var symStr = sym.toString();
+
+            if (!symStr.contains("_")) {
+                EVAL.defineVariable(sym);
+                continue;
+            }
+
+            var newSym = symStr.replace("_", "uuu");
+            equationString = equationString.replaceAll(symStr, newSym);
+            var inewSym = EVAL.defineVariable(newSym);
+            constants.set(i, inewSym);
+            mappings.put(inewSym, mappings.removeDouble(sym));
+        }
+        return equationString;
     }
 
     private static void loadVariables(String[] varNames, String[] varVals, ArrayList<ISymbol> errors, Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> variables, ArrayList<ISymbol> constants) {
