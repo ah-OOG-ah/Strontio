@@ -51,15 +51,12 @@ public class Horror {
         }
 
         // Load variable-error pairs
-        final var result = EVAL.defineVariable(resultString);
-        final var resultError = EVAL.defineVariable("\\delta " + resultString);
         final var mappings = new Object2DoubleArrayMap<ISymbol>();
-        final var symbols = new HashSet<>(asList(rawVariableNames));
         final var variables = new ArrayList<ISymbol>();
         final var errors = new ArrayList<ISymbol>();
         final var constants = new ArrayList<ISymbol>();
 
-        loadVariables(rawVariableNames, rawValues, errors, mappings, symbols, variables, constants);
+        loadVariables(rawVariableNames, rawValues, errors, mappings, variables, constants);
 
         // symja doesn't properly handle variables with underscores in the name
         // We replace them with `uuu`
@@ -104,6 +101,8 @@ public class Horror {
             mappings.put(inewSym, mappings.removeDouble(sym));
         }
 
+        final var result = EVAL.defineVariable(resultString);
+        final var resultError = EVAL.defineVariable("\\delta " + resultString);
         final var equation = EVAL.eval(equationString);
         LOGGER.info("Evaluating: {}", equation);
         LOGGER.info("Using variables: {}", variables);
@@ -161,7 +160,9 @@ public class Horror {
                 false);
     }
 
-    private static void loadVariables(String[] varNames, String[] varVals, ArrayList<ISymbol> errors, Object2DoubleArrayMap<ISymbol> mappings, HashSet<String> symbols, ArrayList<ISymbol> variables, ArrayList<ISymbol> constants) {
+    private static void loadVariables(String[] varNames, String[] varVals, ArrayList<ISymbol> errors, Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> variables, ArrayList<ISymbol> constants) {
+        final var symbols = new HashSet<>(asList(varNames));
+
         // We assume variables and errors appear in the same order
         for (int i = 0; i < varNames.length; ++i) {
             final var value = varVals[i];
