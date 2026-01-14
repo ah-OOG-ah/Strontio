@@ -1,18 +1,24 @@
 package klaxon.klaxon.horror;
 
+import static java.lang.Double.parseDouble;
 import static java.util.Arrays.asList;
 import static klaxon.klaxon.horror.Files.readString;
-import static klaxon.klaxon.horror.TeXHelper.appendTex;
+import static klaxon.klaxon.horror.TeXHelper.appendTexs;
+import static klaxon.klaxon.horror.TeXHelper.makeTex;
+import static org.matheclipse.core.expression.F.NIL;
+import static org.matheclipse.core.interfaces.IExpr.COMPARE_TERNARY.TRUE;
 
+import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import org.matheclipse.core.eval.ExprEvaluator;
 import org.matheclipse.core.expression.F;
-import org.matheclipse.core.form.tex.TeXFormFactory;
+import org.matheclipse.core.expression.S;
+import org.matheclipse.core.interfaces.IAST;
 import org.matheclipse.core.interfaces.IExpr;
+import org.matheclipse.core.interfaces.ISymbol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,21 +60,32 @@ public class Horror {
         // Load variable-error pairs
         final var result = evaluator.defineVariable(resultString);
         final var resultError = evaluator.defineVariable("\\delta " + resultString);
+        final var mappings = new Object2DoubleArrayMap<ISymbol>();
         final var symbols = new HashSet<>(asList(varNames));
-        final var variables = new ArrayList<IExpr>();
-        final var errors = new ArrayList<IExpr>();
-        final var constants = new ArrayList<IExpr>();
+        final var variables = new ArrayList<ISymbol>();
+        final var errors = new ArrayList<ISymbol>();
+        final var constants = new ArrayList<ISymbol>();
 
-        for (var sym : varNames) {
-            switch (sym) {
+        // We assume variables and errors appear in the same order
+        for (int i = 0; i < varNames.length; ++i) {
+            final var value = varVals[i];
+            switch (varNames[i]) {
                 case null -> {} // ??? but handle anyway
-                case String s when s.startsWith("\\delta ") -> {} // error, skip it
-                case String _ when symbols.contains("\\delta " + sym) -> {
-                    variables.add(evaluator.defineVariable(sym)); // variable
-                    // we add the corresponding error here, to ensure the lists share indices
-                    errors.add(evaluator.defineVariable("\\delta " + sym));
+                case String sym when sym.startsWith("\\delta ") -> { // error
+                    var err = evaluator.defineVariable(sym);
+                    errors.add(err);
+                    mappings.put(err, parseDouble(value));
                 }
-                default -> constants.add(evaluator.defineVariable(sym)); // must be a constant then, it has no error
+                case String sym when symbols.contains("\\delta " + sym) -> { // variable
+                    var var = evaluator.defineVariable(sym);
+                    variables.add(var);
+                    mappings.put(var, parseDouble(value));
+                }
+                case String sym -> { // must be a constant then, it has no error
+                    var conzt = evaluator.defineVariable(sym);
+                    constants.add(conzt);
+                    mappings.put(conzt, parseDouble(value));
+                }
             }
         }
 
@@ -99,13 +116,25 @@ public class Horror {
         LOGGER.info("First line: {}", frist);
         LOGGER.info("Second line: {}", snecod);
 
-        // Third line fills in variables
-        final var latexFactory = new TeXFormFactory();
-        var buffer = new StringBuilder();
-        latexFactory.convert(buffer, frist);
-        final var tex1 = buffer.toString(); buffer = new StringBuilder();
-        latexFactory.convert(buffer, snecod);
-        final var tex2 = buffer.toString();
-        TeXHelper.writeTex(appendTex(tex1, tex2), varPath.replaceFirst(".csv", ".tex"), false);
+        // Convert to LaTeX
+        final var tex1 = makeTex(frist);
+        final var tex2 = makeTex(snecod);
+
+        // Now substitute variables
+        IExpr thrid = snecod.copy();
+        var i = mappings.object2DoubleEntrySet().fastIterator();
+        while (i.hasNext()) {
+            var e = i.next();
+            var r = thrid.replaceAll(F.Rule(e.getKey(), F.symjify(e.getDoubleValue())));
+            if (r != NIL) {
+                thrid = r;
+            }
+        }
+        final var tex3 = makeTex(thrid);
+
+        TeXHelper.writeTex(
+                appendTexs(tex1, tex2, tex3, makeTex(evaluator.eval(thrid))),
+                varPath.replaceFirst(".csv", ".tex"),
+                false);
     }
 }
