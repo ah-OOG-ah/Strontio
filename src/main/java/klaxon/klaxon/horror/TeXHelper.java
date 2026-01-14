@@ -69,15 +69,14 @@ public class TeXHelper {
         return ret.toString();
     }
 
-    public static void writeTex(String tex, String filename, boolean verbose) {
-        final var path = Path.of(filename);
+    public static void writeTex(String tex, Path file, boolean verbose) {
         try {
-            writeString(path, PREAMBLE, CREATE, TRUNCATE_EXISTING, WRITE);
-            writeString(path, tex, APPEND);
-            writeString(path, POSTSCRIPT, APPEND);
+            writeString(file, PREAMBLE, CREATE, TRUNCATE_EXISTING, WRITE);
+            writeString(file, tex, APPEND);
+            writeString(file, POSTSCRIPT, APPEND);
         } catch (IOException e) {
             if (verbose) {
-                IO.println("Failed to write TeX to " + path + "!");
+                IO.println("Failed to write TeX to " + file + "!");
                 IO.println(e);
             }
         }

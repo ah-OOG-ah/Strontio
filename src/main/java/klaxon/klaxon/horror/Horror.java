@@ -7,8 +7,10 @@ import static klaxon.klaxon.horror.TeXHelper.appendTexs;
 import static klaxon.klaxon.horror.TeXHelper.makeSplitEq;
 import static klaxon.klaxon.horror.TeXHelper.makeTex;
 import static org.matheclipse.core.expression.F.NIL;
+import static org.matheclipse.core.expression.S.File;
 
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -176,9 +178,11 @@ public class Horror {
         }
         final var tex3 = makeTex(thrid);
 
+        var outDir = Path.of("./out");
+        try { java.nio.file.Files.createDirectories(outDir); } catch (IOException e) { throw new RuntimeException(e); }
         TeXHelper.writeTex(
                 makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, makeTex(evaluator.eval(thrid))),
-                varPath.replaceFirst(".csv", ".tex"),
+                outDir.resolve(varPath.replaceFirst(".csv", ".tex")),
                 false);
     }
 }
