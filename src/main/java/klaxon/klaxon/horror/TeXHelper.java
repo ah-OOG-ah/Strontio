@@ -14,15 +14,20 @@ import org.matheclipse.core.interfaces.IExpr;
 
 public class TeXHelper {
     private static final String PREAMBLE = """
-            \\documentclass[10pt, letterpaper]{extarticle}
+            \\documentclass[8pt, letterpaper]{extarticle}
             
             \\usepackage{amsopn}
             \\usepackage{amsmath}
+            \\usepackage{pdflscape}
             
             \\begin{document}
-            
+            \\begin{landscape}
             """;
-    private static final String POSTSCRIPT = "\n\\end{document}";
+    private static final String POSTSCRIPT = """
+            \n
+            \\end{landscape}
+            \\end{document}
+            """;
     private static final TeXFormFactory FACTORY = new TeXFormFactory();
 
     /// Given a LaTeX string, adds another line of LaTeX below it
@@ -35,6 +40,33 @@ public class TeXHelper {
         final var buf = new StringBuilder();
         FACTORY.convert(buf, expression);
         return buf.toString().replaceAll("uuu", "_");
+    }
+
+    private static final String SPLEQ_TOKEN = "__REPLACEME__";
+    private static String SPLEQ_PRE = """
+            \\begin{equation*} \\label{__REPLACEME__}
+            \\begin{split}
+            """;
+    private static final String SPLEQ_POST = """
+            
+            \\end{split}
+            \\end{equation*}
+            """;
+
+    /// Merges the given blocks into a split equation, where ans = texs...
+    public static String makeSplitEq(String ans, String label, String... texs) {
+        StringBuilder ret = new StringBuilder(SPLEQ_PRE.replaceFirst(SPLEQ_TOKEN, label));
+        ret.append(ans);
+        for (var tex : texs) {
+            ret.append(" & = ").append(tex).append(" \\\\\n");
+        }
+
+        // Trim the last 3 chars (an extra ' \\')
+        var len = ret.length();
+        ret.delete(len - 3, len);
+        ret.append(SPLEQ_POST);
+
+        return ret.toString();
     }
 
     public static void writeTex(String tex, String filename, boolean verbose) {

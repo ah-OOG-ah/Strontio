@@ -4,6 +4,7 @@ import static java.lang.Double.parseDouble;
 import static java.util.Arrays.asList;
 import static klaxon.klaxon.horror.Files.readString;
 import static klaxon.klaxon.horror.TeXHelper.appendTexs;
+import static klaxon.klaxon.horror.TeXHelper.makeSplitEq;
 import static klaxon.klaxon.horror.TeXHelper.makeTex;
 import static org.matheclipse.core.expression.F.NIL;
 
@@ -153,7 +154,7 @@ public class Horror {
         }
         final var sumOfSquaresEquations = sumExpr;
 
-        final var frist = F.Set(resultError, F.Sqrt(sumOfSquaresSimple));
+        final var frist = F.Sqrt(sumOfSquaresSimple);
         final var snecod = F.Sqrt(sumOfSquaresEquations);
 
         LOGGER.info("First line: {}", frist);
@@ -176,7 +177,7 @@ public class Horror {
         final var tex3 = makeTex(thrid);
 
         TeXHelper.writeTex(
-                appendTexs(tex1, tex2, tex3, makeTex(evaluator.eval(thrid))),
+                makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, makeTex(evaluator.eval(thrid))),
                 varPath.replaceFirst(".csv", ".tex"),
                 false);
     }
