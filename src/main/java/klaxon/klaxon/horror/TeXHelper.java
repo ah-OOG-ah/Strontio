@@ -30,10 +30,11 @@ public class TeXHelper {
         return Arrays.stream(texs).reduce((t1, t2) -> t1 + "\n\n" + t2).orElse("");
     }
 
+    /// Convert the given expression to LaTeX. Replaces uuu with _, for pretty printing
     public static String makeTex(IExpr expression) {
         final var buf = new StringBuilder();
         FACTORY.convert(buf, expression);
-        return buf.toString();
+        return buf.toString().replaceAll("uuu", "_");
     }
 
     public static void writeTex(String tex, String filename, boolean verbose) {

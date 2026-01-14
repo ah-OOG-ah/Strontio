@@ -38,7 +38,7 @@ public class Horror {
         final var varNames = Arrays.copyOfRange(headers, 2, headers.length);
 
         final var resultString = values[0];
-        final var equationString = values[1];
+        var equationString = values[1];
         final var varVals = Arrays.copyOfRange(values, 2, values.length);
 
         if (varVals.length < varNames.length) {
@@ -50,9 +50,6 @@ public class Horror {
 
         // Start parsing things
         final var evaluator = new ExprEvaluator();
-        final var equation = evaluator.eval(equationString);
-        LOGGER.info("Evaluating: {}", equation);
-        LOGGER.info("Using variables: {}", Arrays.toString(varNames));
 
         // Load variable-error pairs
         final var result = evaluator.defineVariable(resultString);
@@ -85,6 +82,55 @@ public class Horror {
                 }
             }
         }
+
+        // symja doesn't properly handle variables with underscores in the name
+        // We replace them with `uuu`
+        evaluator.clearVariables();
+        for (int i = 0; i < variables.size(); ++i) {
+            var sym = variables.get(i);
+            var symStr = sym.toString();
+            var err = errors.get(i);
+
+            if (!symStr.contains("_")) {
+                evaluator.defineVariable(sym);
+                evaluator.defineVariable(err);
+                continue;
+            }
+
+            var newSym = symStr.replace("_", "uuu");
+            equationString = equationString.replaceAll(symStr, newSym);
+            var inewSym = evaluator.defineVariable(newSym);
+            variables.set(i, inewSym);
+            mappings.put(inewSym, mappings.removeDouble(sym));
+
+            var errStr = err.toString();
+            var newErr = errStr.replace("_", "uuu");
+            equationString = equationString.replaceAll(errStr, newErr);
+            var inewErr = evaluator.defineVariable(newErr);
+            errors.set(i, inewErr);
+            mappings.put(inewErr, mappings.removeDouble(err));
+        }
+        for (int i = 0; i < constants.size(); ++i) {
+            var sym = constants.get(i);
+            var symStr = sym.toString();
+
+            if (!symStr.contains("_")) {
+                evaluator.defineVariable(sym);
+                continue;
+            }
+
+            var newSym = symStr.replace("_", "uuu");
+            equationString = equationString.replaceAll(symStr, newSym);
+            var inewSym = evaluator.defineVariable(newSym);
+            constants.set(i, inewSym);
+            mappings.put(inewSym, mappings.removeDouble(sym));
+        }
+
+        final var equation = evaluator.eval(equationString);
+        LOGGER.info("Evaluating: {}", equation);
+        LOGGER.info("Using variables: {}", variables);
+        LOGGER.info("Using errors: {}", errors);
+        LOGGER.info("Using constants: {}", constants);
 
         // Line 1: spit out the error preparation
         // Generate the expressions!
