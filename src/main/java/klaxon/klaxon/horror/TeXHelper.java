@@ -14,11 +14,11 @@ import org.matheclipse.core.interfaces.IExpr;
 
 public class TeXHelper {
     private static final String PREAMBLE = """
-            \\documentclass[8pt, letterpaper]{extarticle}
+            \\documentclass[8pt]{extarticle}
             
             \\usepackage{amsopn}
             \\usepackage{amsmath}
-            \\usepackage{pdflscape}
+            \\usepackage[letterpaper, landscape, margin=0.1in]{geometry}
             
             \\begin{document}
             \\begin{landscape}
