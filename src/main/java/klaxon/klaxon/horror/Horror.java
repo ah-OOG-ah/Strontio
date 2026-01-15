@@ -1,20 +1,27 @@
 package klaxon.klaxon.horror;
 
+import static java.lang.Double.NaN;
 import static java.lang.Double.parseDouble;
+import static java.lang.Math.abs;
+import static java.lang.Math.round;
 import static java.util.Arrays.asList;
 import static klaxon.klaxon.horror.Files.readString;
+import static klaxon.klaxon.horror.FormatHelper.escapeSymbol;
+import static klaxon.klaxon.horror.FormatHelper.formatError;
+import static klaxon.klaxon.horror.FormatHelper.makeDFormatter;
+import static klaxon.klaxon.horror.FormatHelper.unescapeSymbol;
 import static klaxon.klaxon.horror.TeXHelper.makeSplitEq;
 import static klaxon.klaxon.horror.TeXHelper.makeTex;
 import static org.matheclipse.core.expression.F.NIL;
 
 import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.function.Function;
-import java.util.regex.Pattern;
 import org.matheclipse.core.eval.ExprEvaluator;
 import org.matheclipse.core.expression.F;
 import org.matheclipse.core.interfaces.IExpr;
@@ -74,6 +81,20 @@ public class Horror {
         final var constants = new ArrayList<ISymbol>();
         loadVariables(rawVariableNames, rawValues, errors, mappings, variables, constants);
 
+        // Create a "display mapping", which rounds to even to only display significant figures.
+        // Calculations are done using the normal mapping, but the LaTeX uses display-mapped numbers
+        final var displayMapping = new Object2ObjectOpenHashMap<ISymbol, NumberFormat>(mappings.size());
+        for (int i = 0; i < variables.size(); ++i) {
+            final var err = errors.get(i);
+            final var errVal = mappings.getDouble(err);
+
+            var df = makeDFormatter(errVal);
+            displayMapping.put(variables.get(i), df);
+            displayMapping.put(err, df);
+        }
+
+        // Constants are always displayed as-is, they have infinite precision.
+
         final var result = EVAL.defineVariable(resultString);
         final var resultError = EVAL.defineVariable("\\delta " + resultString);
         final var equation = EVAL.eval(equationString);
@@ -117,62 +138,45 @@ public class Horror {
             }
         }
 
+        // Do it again, but rounding
+        IExpr thridPretty = snecod.copy();
+        i = mappings.object2DoubleEntrySet().fastIterator();
+        while (i.hasNext()) {
+            var e = i.next();
+            var df = displayMapping.get(e.getKey());
+            if (df == null) continue;
+
+            var rounded = F.symjify(df.format(e.getDoubleValue()));
+            var r = thridPretty.replaceAll(F.Rule(e.getKey(), F.symjify(rounded)));
+            if (r != NIL) {
+                thridPretty = r;
+            }
+        }
+
+        // Finally, compute (and pretty-print) the answer
+        var ans = EVAL.eval(thrid);
+
+        // Raw values
         LOGGER.info("First line: {}", frist);
         LOGGER.info("Second line: {}", snecod);
+        LOGGER.info("Third line: {}", thrid);
 
         // Convert to LaTeX
         final var tex1 = makeTex(frist);
         final var tex2 = makeTex(snecod);
-        final var tex3 = makeTex(thrid);
+        final var tex3 = makeTex(thridPretty);
+
+        // Pretty-print the answer, making sure trailing 0's are preserved if necessary
+        var fans = EVAL.evalf(ans);
+        final var tex4 = Double.isNaN(fans) ? makeTex(ans) : formatError(fans);
 
         var outDir = Path.of("./out");
         try { java.nio.file.Files.createDirectories(outDir); } catch (IOException e) { throw new RuntimeException(e); }
-        final var combinedTex = makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, makeTex(EVAL.eval(thrid)));
+        final var combinedTex = makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, tex4);
         TeXHelper.writeTex(
                 unescapeSymbol(combinedTex),
                 outDir.resolve(eqFilePath.replaceFirst(".csv", ".tex")),
                 false);
-    }
-
-    /// symja doesn't properly handle several characters I want to use. This converts them into characters I *don't*
-    /// want to use, but symja is fine with.
-    /// - `_` -> `uuu`
-    /// - `capital letters` -> `zzlowercase letterszz`
-    private static final ArrayList<Function<String, String>> ESCAPES_FWD = new ArrayList<>();
-    private static final ArrayList<Function<String, String>> ESCAPES_BCKWD = new ArrayList<>();
-    static {
-        ESCAPES_FWD.add(s -> s.replaceAll("([A-Z]+)", "zz$1zz").toLowerCase());
-        final var pattern = Pattern.compile("zz([a-z]+)zz");
-        ESCAPES_BCKWD.add(s -> {
-            var m = pattern.matcher(s);
-            var sb = new StringBuilder(s.length());
-            while (m.find()) {
-                m.appendReplacement(sb, m.group(1).toUpperCase());
-            }
-            m.appendTail(sb);
-            return sb.toString();
-        });
-        // needs to be second, to avoid ruining the first one on reverse
-        ESCAPES_FWD.add(s -> s.replaceAll("_", "uuu"));
-        ESCAPES_BCKWD.add(s -> s.replaceAll("uuu", "_"));
-    }
-
-    /// See [#ESCAPES_FWD] for the list of escaped symbols
-    private static String escapeSymbol(String sym) {
-        var ret = sym;
-        for (var escaper : ESCAPES_FWD) {
-            ret = escaper.apply(ret);
-        }
-        return ret;
-    }
-
-    /// See [#ESCAPES_FWD] for the list of escaped symbols
-    private static String unescapeSymbol(String sym) {
-        var ret = sym;
-        for (var unescaper : ESCAPES_BCKWD) {
-            ret = unescaper.apply(ret);
-        }
-        return ret;
     }
 
     private static void loadVariables(String[] varNames, String[] varVals, ArrayList<ISymbol> errors, Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> variables, ArrayList<ISymbol> constants) {

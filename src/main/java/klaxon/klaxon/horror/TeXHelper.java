@@ -14,7 +14,7 @@ import org.matheclipse.core.interfaces.IExpr;
 
 public class TeXHelper {
     private static final String PREAMBLE = """
-            \\documentclass[8pt]{extarticle}
+            \\documentclass[12pt]{extarticle}
             
             \\usepackage{amsopn}
             \\usepackage{amsmath}
@@ -43,7 +43,7 @@ public class TeXHelper {
     }
 
     private static final String SPLEQ_TOKEN = "__REPLACEME__";
-    private static String SPLEQ_PRE = """
+    private static final String SPLEQ_PRE = """
             \\begin{equation*} \\label{__REPLACEME__}
             \\begin{split}
             """;
