@@ -183,22 +183,19 @@ public class Horror {
             final var value = varVals[i];
             switch (varNames[i]) {
                 case null -> {} // ??? but handle anyway
-                case String sym when sym.startsWith("\\delta ") -> { // error
-                    var err = EVAL.defineVariable(sym);
-                    errors.add(err);
-                    mappings.put(err, parseDouble(value));
-                }
-                case String sym when symbols.contains("\\delta " + sym) -> { // variable
-                    var var = EVAL.defineVariable(sym);
-                    variables.add(var);
-                    mappings.put(var, parseDouble(value));
-                }
-                case String sym -> { // must be a constant then, it has no error
-                    var conzt = EVAL.defineVariable(sym);
-                    constants.add(conzt);
-                    mappings.put(conzt, parseDouble(value));
-                }
+                // is error
+                case String s when s.startsWith("\\delta ") -> defineSymbol(mappings, errors, s, value);
+                // has an error in the pool
+                case String s when symbols.contains("\\delta " + s) -> defineSymbol(mappings, variables, s, value);
+                // must be a constant then, it has no error
+                case String s -> defineSymbol(mappings, constants, s, value);
             }
         }
+    }
+
+    private static void defineSymbol(Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> symbols, String s, String value) {
+        var sym = EVAL.defineVariable(s);
+        symbols.add(sym);
+        mappings.put(sym, parseDouble(value));
     }
 }
