@@ -51,8 +51,8 @@ public class Horror {
         final var values = varFile.get(1).split(",");
         final var rawVariableNames = Arrays.copyOfRange(headers, 2, headers.length);
 
-        final var resultString = values[0];
-        var equationString = values[1];
+        final var resultString = escapeSymbol(values[0]);
+        var equationString = escapeSymbol(values[1]);
         final var rawValues = Arrays.copyOfRange(values, 2, values.length);
 
         if (rawValues.length < rawVariableNames.length) {
@@ -63,7 +63,9 @@ public class Horror {
         }
 
         // symja doesn't handle some characters properly, we gotta fix that
-        equationString = escapeSymbols(equationString, rawVariableNames);
+        for (int i = 0; i < rawVariableNames.length; ++i) {
+            rawVariableNames[i] = escapeSymbol(rawVariableNames[i]);
+        }
 
         // Load variable-error pairs
         final var mappings = new Object2DoubleArrayMap<ISymbol>();
@@ -136,13 +138,6 @@ public class Horror {
     /// want to use, but symja is fine with.
     /// - `_` -> `uuu`
     /// - `capital letters` -> `zzlowercase letterszz`
-    private static String escapeSymbols(String equationString, String[] varNames) {
-        for (int i = 0; i < varNames.length; ++i) {
-            varNames[i] = escapeSymbol(varNames[i]);
-        }
-        return escapeSymbol(equationString);
-    }
-
     private static final ArrayList<Function<String, String>> ESCAPES_FWD = new ArrayList<>();
     private static final ArrayList<Function<String, String>> ESCAPES_BCKWD = new ArrayList<>();
     static {
@@ -162,7 +157,7 @@ public class Horror {
         ESCAPES_BCKWD.add(s -> s.replaceAll("uuu", "_"));
     }
 
-    /// See [#escapeSymbols] for the list of escaped symbols
+    /// See [#ESCAPES_FWD] for the list of escaped symbols
     private static String escapeSymbol(String sym) {
         var ret = sym;
         for (var escaper : ESCAPES_FWD) {
@@ -171,7 +166,7 @@ public class Horror {
         return ret;
     }
 
-    /// See [#escapeSymbols] for the list of escaped symbols
+    /// See [#ESCAPES_FWD] for the list of escaped symbols
     private static String unescapeSymbol(String sym) {
         var ret = sym;
         for (var unescaper : ESCAPES_BCKWD) {
