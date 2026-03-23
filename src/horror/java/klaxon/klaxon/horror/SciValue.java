@@ -83,8 +83,8 @@ public class SciValue {
     public String getSymJaString() {
         if (Double.isNaN(value)) throw new IllegalStateException("Cannot get NaN value!");
         return switch (isExact) {
-            case false -> Double.toString(value);
-            case true -> {
+            case true -> Double.toString(value);
+            case false -> {
                 // Rounding isn't affected by power, we can split these steps up.
                 final var df = DecimalFormat.getInstance();
                 df.setRoundingMode(RoundingMode.HALF_EVEN);

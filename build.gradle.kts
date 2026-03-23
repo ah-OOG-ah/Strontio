@@ -14,6 +14,8 @@ repositories {
 var horrorImplementation = "";
 sourceSets {
     val horror by creating {
+
+
         horrorImplementation = implementationConfigurationName
     }
 }
@@ -22,16 +24,20 @@ dependencies {
     implementation("org.jetbrains:annotations:26.0.2")
     implementation("org.ejml:ejml-all:0.44.0")
 
-    implementation("it.unimi.dsi:fastutil:8.5.16")
+    horrorImplementation("org.matheclipse:matheclipse-core:3.0.0")
     horrorImplementation("org.matheclipse:matheclipse-core:3.0.0")
 
     // Elmo deps
     implementation("com.formdev:flatlaf:3.6")
     implementation("com.formdev:flatlaf-extras:3.6")
 
-    implementation("org.apache.logging.log4j:log4j-api:2.25.3")     // Log4j2 API
-    implementation("org.apache.logging.log4j:log4j-core:2.25.3")    // Log4j2 Core impl
-    implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.25.3") // SLF4J to Log4j2 bridge
+    fun depLog4J(config: String) {
+        config("org.apache.logging.log4j:log4j-api:2.25.3")     // Log4j2 API
+        config("org.apache.logging.log4j:log4j-core:2.25.3")    // Log4j2 Core impl
+        config("org.apache.logging.log4j:log4j-slf4j2-impl:2.25.3") // SLF4J to Log4j2 bridge
+    }
+    depLog4J("implementation")
+    depLog4J(horrorImplementation)
 
     implementation("org.jfree:jfreechart:1.5.6")
 
@@ -61,6 +67,10 @@ java {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.addAll(vectorArgs)
+}
+
+tasks.withType<JavaExec> {
+    jvmArguments.addAll(vectorArgs)
 }
 
 tasks.test {
