@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration monitorinterval="30" status="info" strict="true">
-    <Properties>
-        <Property name="filename">log/CelsiusConverter.log</Property>
-    </Properties>
     <Appenders>
         <Appender type="Console" name="Console">
             <Layout type="PatternLayout" pattern="[%d] [%t/%p]: %m%n" />
