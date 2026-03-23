@@ -1,24 +1,18 @@
 package klaxon.klaxon.horror;
 
-import static java.lang.Double.NaN;
-import static java.lang.Double.parseDouble;
-import static java.lang.Math.abs;
-import static java.lang.Math.round;
 import static java.util.Arrays.asList;
 import static klaxon.klaxon.horror.Files.readString;
-import static klaxon.klaxon.horror.FormatHelper.escapeSymbol;
 import static klaxon.klaxon.horror.FormatHelper.formatError;
-import static klaxon.klaxon.horror.FormatHelper.makeDFormatter;
-import static klaxon.klaxon.horror.FormatHelper.unescapeSymbol;
+import static klaxon.klaxon.horror.FormatHelper.getNextSafeName;
+import static klaxon.klaxon.horror.FormatHelper.subSymbols;
+import static klaxon.klaxon.horror.FormatHelper.unsubSymbols;
 import static klaxon.klaxon.horror.TeXHelper.makeSplitEq;
 import static klaxon.klaxon.horror.TeXHelper.makeTex;
 import static org.matheclipse.core.expression.F.NIL;
 
-import it.unimi.dsi.fastutil.objects.Object2DoubleArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import com.google.common.collect.HashBiMap;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -43,6 +37,8 @@ public class Horror {
     private static void parseEquationFile(String eqFilePath) {
         EVAL.clearVariables();
 
+        /*----------------------------------------- LOAD FROM FILE ---------------------------------------------------*/
+
         final var varOpt = readString(Path.of(eqFilePath), false);
         if (varOpt.isEmpty()) { LOGGER.error("Failed to read variables from {}!", eqFilePath);
             return;
@@ -58,8 +54,6 @@ public class Horror {
         final var values = varFile.get(1).split(",");
         final var rawVariableNames = Arrays.copyOfRange(headers, 2, headers.length);
 
-        final var resultString = escapeSymbol(values[0]);
-        var equationString = escapeSymbol(values[1]);
         final var rawValues = Arrays.copyOfRange(values, 2, values.length);
 
         if (rawValues.length < rawVariableNames.length) {
@@ -70,30 +64,26 @@ public class Horror {
         }
 
         // symja doesn't handle some characters properly, we gotta fix that
-        for (int i = 0; i < rawVariableNames.length; ++i) {
-            rawVariableNames[i] = escapeSymbol(rawVariableNames[i]);
-        }
+        //for (int i = 0; i < rawVariableNames.length; ++i) {
+        //    rawVariableNames[i] = escapeSymbol(rawVariableNames[i]);
+        //}
 
         // Load variable-error pairs
-        final var mappings = new Object2DoubleArrayMap<ISymbol>();
+        final HashBiMap<ISymbol, SciValue> mappings = HashBiMap.create();
         final var variables = new ArrayList<ISymbol>();
         final var errors = new ArrayList<ISymbol>();
         final var constants = new ArrayList<ISymbol>();
         loadVariables(rawVariableNames, rawValues, errors, mappings, variables, constants);
 
-        // Create a "display mapping", which rounds to even to only display significant figures.
-        // Calculations are done using the normal mapping, but the LaTeX uses display-mapped numbers
-        final var displayMapping = new Object2ObjectOpenHashMap<ISymbol, NumberFormat>(mappings.size());
-        for (int i = 0; i < variables.size(); ++i) {
-            final var err = errors.get(i);
-            final var errVal = mappings.getDouble(err);
+        final var resultSym = EVAL.defineVariable(getNextSafeName());
+        mappings.put(resultSym, new SciValue(values[0]));
 
-            var df = makeDFormatter(errVal);
-            displayMapping.put(variables.get(i), df);
-            displayMapping.put(err, df);
-        }
+        final var resultString = subSymbols(values[0], mappings);
+        var equationString = subSymbols(values[1], mappings);
 
-        // Constants are always displayed as-is, they have infinite precision.
+
+        /*--------------------------------------- END LOAD FROM FILE -------------------------------------------------*/
+        /*-------------------------------------------- EVALUATE ------------------------------------------------------*/
 
         final var result = EVAL.defineVariable(resultString);
         final var resultError = EVAL.defineVariable("\\delta " + resultString);
@@ -124,47 +114,52 @@ public class Horror {
         }
         final var sumOfSquaresEquations = sumExpr;
 
-        final var frist = F.Sqrt(sumOfSquaresSimple);
-        final var snecod = F.Sqrt(sumOfSquaresEquations);
+        final var sumSquareLine1 = F.Sqrt(sumOfSquaresSimple);
+        final var subbedPartialsLine2 = F.Sqrt(sumOfSquaresEquations);
 
-        // Third line has variables subbed in
-        IExpr thrid = snecod.copy();
-        var i = mappings.object2DoubleEntrySet().fastIterator();
-        while (i.hasNext()) {
-            var e = i.next();
-            var r = thrid.replaceAll(F.Rule(e.getKey(), F.symjify(e.getDoubleValue())));
-            if (r != NIL) {
-                thrid = r;
+        // In order to make the third line work, we need to...
+        // 1) Continue calculations with exact variable values
+        // 2) Print out the third line with *rounded* values
+        // In order to achieve this, we can modify the generated TeX into thrid
+        // Step 2: Copy it and add a tag var, something like `vOOOp`, multiplied by each number. (vOOOpe for errors)
+        // Step 3: Replace all vOOOp*num with the number, but with OOO many sig figs
+        IExpr finalEquation = subbedPartialsLine2.copy();
+        for (var symPair : mappings.entrySet()) {
+            var sym = symPair.getKey();
+            var value = symPair.getValue();
+            if (resultSym.equals(sym)) continue;
+
+            var replacedEquation = finalEquation.replaceAll(F.Rule(sym, value.getSymJaValue()));
+            if (replacedEquation != NIL) {
+                finalEquation = replacedEquation;
             }
         }
 
-        // Do it again, but rounding
-        IExpr thridPretty = snecod.copy();
-        i = mappings.object2DoubleEntrySet().fastIterator();
-        while (i.hasNext()) {
-            var e = i.next();
-            var df = displayMapping.get(e.getKey());
-            if (df == null) continue;
+        // Do it again, but only visually - round the values
+        IExpr subbedValuesLine3 = subbedPartialsLine2.copy();
+        for (var symPair : mappings.entrySet()) {
+            var sym = symPair.getKey();
+            var val = symPair.getValue();
+            if (Double.isNaN(val.value)) continue;
 
-            var rounded = F.symjify(df.format(e.getDoubleValue()));
-            var r = thridPretty.replaceAll(F.Rule(e.getKey(), F.symjify(rounded)));
+            var r = subbedValuesLine3.replaceAll(F.Rule(sym, F.symjify(val.getSymJaString())));
             if (r != NIL) {
-                thridPretty = r;
+                subbedValuesLine3 = r;
             }
         }
 
         // Finally, compute (and pretty-print) the answer
-        var ans = EVAL.eval(thrid);
+        var ans = EVAL.eval(finalEquation);
 
         // Raw values
-        LOGGER.info("First line: {}", frist);
-        LOGGER.info("Second line: {}", snecod);
-        LOGGER.info("Third line: {}", thrid);
+        LOGGER.info("First line: {}", sumSquareLine1);
+        LOGGER.info("Second line: {}", subbedPartialsLine2);
+        LOGGER.info("Third line: {}", finalEquation);
 
         // Convert to LaTeX
-        final var tex1 = makeTex(frist);
-        final var tex2 = makeTex(snecod);
-        final var tex3 = makeTex(thridPretty);
+        final var tex1 = makeTex(sumSquareLine1);
+        final var tex2 = makeTex(subbedPartialsLine2);
+        final var tex3 = makeTex(subbedValuesLine3);
 
         // Pretty-print the answer, making sure trailing 0's are preserved if necessary
         var fans = EVAL.evalf(ans);
@@ -174,32 +169,33 @@ public class Horror {
         try { java.nio.file.Files.createDirectories(outDir); } catch (IOException e) { throw new RuntimeException(e); }
         final var combinedTex = makeSplitEq(makeTex(resultError), "eq1", tex1, tex2, tex3, tex4);
         TeXHelper.writeTex(
-                unescapeSymbol(combinedTex),
-                outDir.resolve(eqFilePath.replaceFirst(".csv", ".tex")),
+                unsubSymbols(combinedTex, mappings),
+                outDir.resolve(eqFilePath.replaceFirst("\\.csv", ".tex")),
                 false);
     }
 
-    private static void loadVariables(String[] varNames, String[] varVals, ArrayList<ISymbol> errors, Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> variables, ArrayList<ISymbol> constants) {
+    private static void loadVariables(String[] varNames, String[] varVals, ArrayList<ISymbol> errors, HashBiMap<ISymbol, SciValue> mappings, ArrayList<ISymbol> variables, ArrayList<ISymbol> constants) {
         final var symbols = new HashSet<>(asList(varNames));
 
-        // We assume variables and errors appear in the same order
-        for (int i = 0; i < varNames.length; ++i) {
-            final var value = varVals[i];
-            switch (varNames[i]) {
-                case null -> {} // ??? but handle anyway
-                // is error
-                case String s when s.startsWith("\\delta ") -> defineSymbol(mappings, errors, s, value);
-                // has an error in the pool
-                case String s when symbols.contains("\\delta " + s) -> defineSymbol(mappings, variables, s, value);
-                // must be a constant then, it has no error
-                case String s -> defineSymbol(mappings, constants, s, value);
+        // Variables are always followed by their errors
+        for (int varI = 0; varI < varNames.length; ++varI) {
+            final var name = varNames[varI];
+            final var value = varVals[varI];
+
+            // Create a safe name and map it to the real one
+            var sym = EVAL.defineVariable(getNextSafeName());
+            final SciValue sciVal;
+            if (symbols.contains("\\delta " + name)) {
+                var errVal = varVals[varI + 1];
+                sciVal = new SciValue(name, value, errVal);
+                variables.add(sym);
+            } else {
+                sciVal = new SciValue(name, value);
+                (name.startsWith("\\delta") ? errors : constants).add(sym);
             }
+
+            mappings.put(sym, sciVal);
         }
     }
 
-    private static void defineSymbol(Object2DoubleArrayMap<ISymbol> mappings, ArrayList<ISymbol> symbols, String s, String value) {
-        var sym = EVAL.defineVariable(s);
-        symbols.add(sym);
-        mappings.put(sym, parseDouble(value));
-    }
 }

@@ -3,13 +3,16 @@ package klaxon.klaxon.horror;
 import static java.lang.Math.floor;
 import static java.lang.Math.log10;
 import static java.lang.Math.pow;
+import static java.util.regex.Matcher.quoteReplacement;
 
+import com.google.common.collect.HashBiMap;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.jetbrains.annotations.NotNull;
+import org.matheclipse.core.interfaces.ISymbol;
 
 public class FormatHelper {
 
@@ -36,22 +39,35 @@ public class FormatHelper {
         ESCAPES_BCKWD.add(s -> s.replaceAll("uuu", "_"));
     }
 
-    /// See [#ESCAPES_FWD] for the list of escaped symbols
-    public static String escapeSymbol(String sym) {
-        var ret = sym;
-        for (var escaper : ESCAPES_FWD) {
-            ret = escaper.apply(ret);
+    /// Substitute occurences of the symbols with their SymJa-safed equivalents
+    public static String subSymbols(String original, HashBiMap<ISymbol, SciValue> symbols) {
+        for (var pair : symbols.entrySet()) {
+            assert pair.getValue() != null;
+            var name = pair.getValue().latexName;
+
+            assert pair.getKey() != null;
+            var safeName = pair.getKey().getSymbolName();
+
+            original = original.replaceAll(quoteReplacement(name), safeName);
         }
-        return ret;
+
+        return original;
     }
 
-    /// See [#ESCAPES_FWD] for the list of escaped symbols
-    public static String unescapeSymbol(String sym) {
-        var ret = sym;
-        for (var unescaper : ESCAPES_BCKWD) {
-            ret = unescaper.apply(ret);
+    /// The inverse of {@link #subSymbols(String, HashBiMap)}
+    public static String unsubSymbols(String original, HashBiMap<ISymbol, SciValue> symbols) {
+        for (var pair : symbols.entrySet()) {
+            assert pair.getValue() != null;
+            var name = pair.getValue().latexName;
+
+            assert pair.getKey() != null;
+            var safeName = pair.getKey().getSymbolName();
+
+            // No need to quote, SymJa-safe names have no special characters.
+            original = original.replaceAll("(?<![a-z])" + safeName + "(?![a-z])", quoteReplacement(name));
         }
-        return ret;
+
+        return original;
     }
 
     /// Generates a [NumberFormat] with the correct number of decimals, assuming that errVal is a measured error.
@@ -70,5 +86,22 @@ public class FormatHelper {
 
     public static String formatError(double error) {
         return makeDFormatter(error).format(error);
+    }
+
+    private static final String[] SAFE_NAMES = {
+            "a","b","c","d","e",
+            "f","g","h","i","j",
+            "k","l","m","n","o",
+            "p","q","r","s","t",
+            "u","v","w","x","y",
+            "z"
+    };
+    private static int FREE_NAME_IDX = 0;
+
+    /// Returns an arbitrary name SymJa won't choke on.
+    /// @throws IllegalStateException if it has to repeat names
+    public static String getNextSafeName() {
+        if (FREE_NAME_IDX >= SAFE_NAMES.length) throw new IllegalStateException("Ran out of names to allocate!");
+        return SAFE_NAMES[FREE_NAME_IDX++];
     }
 }

@@ -11,12 +11,19 @@ repositories {
     mavenLocal()
 }
 
+var horrorImplementation = "";
+sourceSets {
+    val horror by creating {
+        horrorImplementation = implementationConfigurationName
+    }
+}
+
 dependencies {
     implementation("org.jetbrains:annotations:26.0.2")
     implementation("org.ejml:ejml-all:0.44.0")
 
     implementation("it.unimi.dsi:fastutil:8.5.16")
-    implementation("org.matheclipse:matheclipse-core:3.0.0")
+    horrorImplementation("org.matheclipse:matheclipse-core:3.0.0")
 
     // Elmo deps
     implementation("com.formdev:flatlaf:3.6")
@@ -31,6 +38,7 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
+
 
 val vectorArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.vector")
 
