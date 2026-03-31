@@ -11,12 +11,14 @@ repositories {
     mavenLocal()
 }
 
-var horrorImplementation = "";
+var horrorImplementation = ""
+var jbestImplementation = ""
 sourceSets {
     val horror by creating {
-
-
         horrorImplementation = implementationConfigurationName
+    }
+    val jbest by creating {
+        jbestImplementation = implementationConfigurationName
     }
 }
 
