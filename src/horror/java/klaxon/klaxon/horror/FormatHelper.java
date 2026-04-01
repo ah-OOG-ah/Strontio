@@ -104,4 +104,10 @@ public class FormatHelper {
         if (FREE_NAME_IDX >= SAFE_NAMES.length) throw new IllegalStateException("Ran out of names to allocate!");
         return SAFE_NAMES[FREE_NAME_IDX++];
     }
+
+    /// Returns an arbitrary name SymJa won't choke on.
+    /// @throws IllegalStateException if it has to repeat names
+    public static void resetSafeNames() {
+        FREE_NAME_IDX = 0;
+    }
 }

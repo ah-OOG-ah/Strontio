@@ -4,6 +4,7 @@ import static java.util.Arrays.asList;
 import static klaxon.klaxon.horror.Files.readString;
 import static klaxon.klaxon.horror.FormatHelper.formatError;
 import static klaxon.klaxon.horror.FormatHelper.getNextSafeName;
+import static klaxon.klaxon.horror.FormatHelper.resetSafeNames;
 import static klaxon.klaxon.horror.FormatHelper.subSymbols;
 import static klaxon.klaxon.horror.FormatHelper.unsubSymbols;
 import static klaxon.klaxon.horror.TeXHelper.makeSplitEq;
@@ -36,6 +37,7 @@ public class Horror {
 
     private static void parseEquationFile(String eqFilePath) {
         EVAL.clearVariables();
+        resetSafeNames();
 
         /*----------------------------------------- LOAD FROM FILE ---------------------------------------------------*/
 
