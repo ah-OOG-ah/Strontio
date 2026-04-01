@@ -57,7 +57,7 @@ public class SciValue {
         // Load exact value
         final var halves = exactValue.split("E", 2);
         final var frist = unifyDecimals(halves[0]);
-        final var valPow = getPowerOfTen(frist, halves.length > 1 ? halves[1] : null);
+        final var valPow = getPowerOfTen(halves[0], halves.length > 1 ? halves[1] : null);
         this.exactValue = frist;
         this.power = valPow;
     }
