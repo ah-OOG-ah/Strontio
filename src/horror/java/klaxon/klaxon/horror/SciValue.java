@@ -90,9 +90,9 @@ public class SciValue {
                 df.setRoundingMode(RoundingMode.HALF_EVEN);
                 df.setMaximumIntegerDigits(1);
                 df.setMaximumFractionDigits(sigFigs - 1);
-                yield df.format(Double.parseDouble(exactValue));
+                yield df.format(Double.parseDouble(exactValue)) + "*10^" + power;
             }
-        } + "*10^" + power;
+        };
     }
 
     private static final Pattern NONZERO_DIGIT = Pattern.compile("[1-9]");
