@@ -1,5 +1,7 @@
 package klaxon.klaxon.horror;
 
+import static klaxon.klaxon.horror.FormatHelper.firstDigit;
+
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.regex.Matcher;
@@ -18,8 +20,8 @@ public class SciValue {
     public final String exactValue;
     public final int power;
     public final double value;
-    public final boolean isExact;
     public final int sigFigs;
+    public final boolean isErr;
 
     /// Create a variable with some error.
     /// @throws IllegalArgumentException if the error is greater than or equal to the value.
@@ -44,15 +46,18 @@ public class SciValue {
 
         // Ex: 1.00 +- 0.10 -> 0 - -2 + 1 -> 3.
         sigFigs = valPow - errPow + 1;
-        isExact = false;
+        isErr = false;
     }
 
-    /// Create a variable with NO error.
-    public SciValue(@NotNull String latexName, @NotNull String exactValue) {
+    /// Create a constant.
+    public SciValue(@NotNull String latexName, @NotNull String exactValue, boolean isConst) {
         this.latexName = latexName;
         value = Double.parseDouble(exactValue);
-        sigFigs = Integer.MAX_VALUE;
-        isExact = true;
+        if (isConst) sigFigs = Integer.MAX_VALUE;
+        else if (firstDigit(exactValue) == 1) {
+            sigFigs = 2;
+        } else sigFigs = 1;
+        isErr = !isConst;
 
         // Load exact value
         final var halves = exactValue.split("E", 2);
@@ -69,7 +74,7 @@ public class SciValue {
         exactValue = "NaN";
         power = Integer.MIN_VALUE;
         sigFigs = 0;
-        isExact = false;
+        isErr = false;
     }
 
     /// SymJa doesn't support E-notation, so this converts it (without rounding)
@@ -82,17 +87,25 @@ public class SciValue {
     /// Pretty-prints the SymJa-compatible number (after round-to-even)
     public String getSymJaString() {
         if (Double.isNaN(value)) throw new IllegalStateException("Cannot get NaN value!");
-        return switch (isExact) {
-            case true -> Double.toString(value);
-            case false -> {
-                // Rounding isn't affected by power, we can split these steps up.
-                final var df = DecimalFormat.getInstance();
-                df.setRoundingMode(RoundingMode.HALF_EVEN);
-                df.setMaximumIntegerDigits(1);
-                df.setMaximumFractionDigits(sigFigs - 1);
-                yield df.format(Double.parseDouble(exactValue)) + "*10^" + power;
-            }
-        };
+        if (isErr) {
+            final var df = DecimalFormat.getInstance();
+            df.setRoundingMode(RoundingMode.HALF_EVEN);
+            df.setMaximumIntegerDigits(1);
+            // Never add the extra bit for small errors, because it messes up SymJa
+            df.setMaximumFractionDigits(-1);
+            return df.format(Double.parseDouble(exactValue)) + "*10^" + power;
+        }
+
+        if (sigFigs == Integer.MAX_VALUE) {
+            return Double.toString(value);
+        }
+
+        // Rounding isn't affected by power, we can split these steps up.
+        final var df = DecimalFormat.getInstance();
+        df.setRoundingMode(RoundingMode.HALF_EVEN);
+        df.setMaximumIntegerDigits(1);
+        df.setMinimumFractionDigits(sigFigs - 1);
+        return df.format(Double.parseDouble(exactValue)) + "*10^" + power;
     }
 
     private static final Pattern NONZERO_DIGIT = Pattern.compile("[1-9]");

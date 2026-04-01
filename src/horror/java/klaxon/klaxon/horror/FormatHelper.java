@@ -110,4 +110,12 @@ public class FormatHelper {
     public static void resetSafeNames() {
         FREE_NAME_IDX = 0;
     }
+
+    public static int firstDigit(String str) {
+        for (int i = 0; i < str.length(); ++i) {
+            final char c = str.charAt(i);
+            if (c >= '1' && c <= '9') return c - '0';
+        }
+        return -1;
+    }
 }

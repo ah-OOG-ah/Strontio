@@ -198,8 +198,9 @@ public class Horror {
                 sciVal = new SciValue(name, value, errVal);
                 variables.add(sym);
             } else {
-                sciVal = new SciValue(name, value);
-                (name.startsWith("\\delta") ? errors : constants).add(sym);
+                var cons = !name.startsWith("\\delta");
+                sciVal = new SciValue(name, value, cons);
+                (cons ? constants : errors).add(sym);
             }
 
             mappings.put(sym, sciVal);
