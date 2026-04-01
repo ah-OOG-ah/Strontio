@@ -20,6 +20,11 @@ sourceSets {
     val jbest by creating {
         jbestImplementation = implementationConfigurationName
     }
+
+    main {
+        compileClasspath += horror.compileClasspath
+        runtimeClasspath += horror.runtimeClasspath
+    }
 }
 
 dependencies {
@@ -49,15 +54,12 @@ dependencies {
 
 
 val vectorArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.vector")
-
-application {
-    mainClass = "klaxon.klaxon.horror.Horror"
-    applicationDefaultJvmArgs += vectorArgs
-}
-
-tasks.run {
+/*
+tasks.register<JavaExec>("runHorror") {
     workingDir = file("run")
-}
+    mainClass = "klaxon.klaxon.horror.Horror"
+//    jvmArguments.addAll(vectorArgs)
+}// */
 
 java {
     toolchain {
@@ -69,6 +71,11 @@ java {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.addAll(vectorArgs)
+}
+
+application {
+    mainClass = "klaxon.klaxon.horror.Horror"
+    //applicationDefaultJvmArgs += vectorArgs
 }
 
 tasks.withType<JavaExec> {
