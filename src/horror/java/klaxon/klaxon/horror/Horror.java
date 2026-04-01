@@ -81,7 +81,7 @@ public class Horror {
         mappings.put(resultSym, new SciValue(values[0]));
         mappings.forEach((sym, val) -> {
             var str = Double.isNaN(val.value) ? "NaN" : val.getSymJaString();
-            LOGGER.info("{}: {} with {}E{} = {} = {}, {}", sym, val.latexName, val.exactValue, val.power, val.value, str, val.isExact);
+            LOGGER.info("{}: {} with {}E{} = {} = {}, {}", sym, val.latexName, val.exactValue, val.power, val.value, str, val.sigFigs);
         });
 
         final var resultString = subSymbols(values[0], mappings);
@@ -161,6 +161,7 @@ public class Horror {
         LOGGER.info("First line: {}", sumSquareLine1);
         LOGGER.info("Second line: {}", subbedPartialsLine2);
         LOGGER.info("Third line: {}", finalEquation);
+        LOGGER.info("Pretty third: {}", subbedValuesLine3);
 
         // Convert to LaTeX
         final var tex1 = makeTex(sumSquareLine1);
