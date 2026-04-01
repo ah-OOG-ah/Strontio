@@ -104,7 +104,8 @@ public class SciValue {
         if (!m.find()) throw new IllegalArgumentException(s + " is not a nonzero number!");
 
         final int idx = m.start();
-        return s.charAt(idx) + "." + s.substring(idx + 1);
+        final var ret = s.charAt(idx) + "." + s.substring(idx + 1);
+        return ret.endsWith(".") ? ret + "0" : ret;
     }
 
     /// See {@link #getPowerOfTen(String, String)}
