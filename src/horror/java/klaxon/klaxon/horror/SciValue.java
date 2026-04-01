@@ -23,7 +23,7 @@ public class SciValue {
 
     /// Create a variable with some error.
     /// @throws IllegalArgumentException if the error is greater than or equal to the value.
-    public SciValue(@NotNull String latexName, @NotNull String exactValue, @NotNull String exactError) {
+    public SciValue(@NotNull String latexName, @NotNull String exactValue, @NotNull String exactError)  {
         value = Double.parseDouble(exactValue);
         this.latexName = latexName;
         if (Double.parseDouble(exactError) >= value)
@@ -32,7 +32,7 @@ public class SciValue {
         // Load exact value
         final var halves = exactValue.split("E", 2);
         final var frist = unifyDecimals(halves[0]);
-        final var valPow = getPowerOfTen(frist, halves.length > 1 ? halves[1] : null);
+        final var valPow = getPowerOfTen(halves[0], halves.length > 1 ? halves[1] : null);
         this.exactValue = frist;
         this.power = valPow;
 
@@ -90,7 +90,7 @@ public class SciValue {
                 df.setRoundingMode(RoundingMode.HALF_EVEN);
                 df.setMaximumIntegerDigits(1);
                 df.setMaximumFractionDigits(sigFigs - 1);
-                yield df.format(value);
+                yield df.format(Double.parseDouble(exactValue));
             }
         } + "*10^" + power;
     }
