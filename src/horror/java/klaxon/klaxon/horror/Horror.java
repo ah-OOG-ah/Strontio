@@ -80,7 +80,8 @@ public class Horror {
         final var resultSym = EVAL.defineVariable(getNextSafeName());
         mappings.put(resultSym, new SciValue(values[0]));
         mappings.forEach((sym, val) -> {
-            LOGGER.info("{}: {} with {}E{} = {}", sym, val.latexName, val.exactValue, val.power, val.value);
+            var str = Double.isNaN(val.value) ? "NaN" : val.getSymJaString();
+            LOGGER.info("{}: {} with {}E{} = {} = {}, {}", sym, val.latexName, val.exactValue, val.power, val.value, str, val.isExact);
         });
 
         final var resultString = subSymbols(values[0], mappings);
