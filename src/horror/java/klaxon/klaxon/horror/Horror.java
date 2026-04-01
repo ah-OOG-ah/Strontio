@@ -77,6 +77,9 @@ public class Horror {
 
         final var resultSym = EVAL.defineVariable(getNextSafeName());
         mappings.put(resultSym, new SciValue(values[0]));
+        mappings.forEach((sym, val) -> {
+            LOGGER.info("{}: {} with {} = {}", sym, val.latexName, val.exactValue, val.value);
+        });
 
         final var resultString = subSymbols(values[0], mappings);
         var equationString = subSymbols(values[1], mappings);
@@ -163,6 +166,7 @@ public class Horror {
 
         // Pretty-print the answer, making sure trailing 0's are preserved if necessary
         var fans = EVAL.evalf(ans);
+        LOGGER.info("Answer: {}", fans);
         final var tex4 = Double.isNaN(fans) ? makeTex(ans) : formatError(fans);
 
         var outDir = Path.of("./out");

@@ -99,6 +99,7 @@ public class SciValue {
     /// Given a string like 1004, strips it to 1.004. It converts it into the first half of scientific notation,
     /// ignoring E-values.
     private String unifyDecimals(String s) {
+        s = s.replaceFirst("\\.", "");
         Matcher m = NONZERO_DIGIT.matcher(s);
         if (!m.find()) throw new IllegalArgumentException(s + " is not a nonzero number!");
 
